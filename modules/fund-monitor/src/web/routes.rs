@@ -3,12 +3,12 @@ use axum::{
     Router,
     extract::{Path, State},
     http::{StatusCode, header},
-    response::{Html, IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
     routing::get,
 };
 use rust_embed::Embed;
 
-use super::{alerts, funds};
+use super::{alerts, dashboard, funds, settings};
 
 #[derive(Embed)]
 #[folder = "web/"]
@@ -19,6 +19,8 @@ pub fn router() -> Router<AppState> {
         .route("/", get(index))
         .route("/healthz", get(healthz))
         .route("/assets/{*path}", get(asset))
+        .merge(dashboard::routes())
+        .merge(settings::routes())
         .merge(alerts::routes())
         .merge(funds::routes())
 }
@@ -31,11 +33,8 @@ async fn healthz(State(state): State<AppState>) -> Result<&'static str, StatusCo
     Ok("ok")
 }
 
-async fn index() -> Result<impl IntoResponse, StatusCode> {
-    let file = Asset::get("index.html").ok_or(StatusCode::NOT_FOUND)?;
-    let html =
-        String::from_utf8(file.data.into_owned()).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    Ok(Html(html))
+async fn index() -> impl IntoResponse {
+    Redirect::to("/dashboard")
 }
 
 async fn asset(Path(path): Path<String>) -> Response {

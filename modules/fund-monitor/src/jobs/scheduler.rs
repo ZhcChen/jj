@@ -16,6 +16,10 @@ impl Scheduler {
     }
 
     pub async fn run_forever(self) {
+        tracing::info!(
+            poll_interval_seconds = self.interval.as_secs(),
+            "fund poll scheduler started"
+        );
         self.run_until(std::future::pending::<()>()).await;
     }
 
@@ -33,8 +37,9 @@ impl Scheduler {
                     break;
                 }
                 _ = ticker.tick() => {
+                    tracing::info!(category = "poll", "fund poll scheduler tick triggered");
                     if let Err(err) = PollFundsJob::new(self.state.clone()).run_once().await {
-                        eprintln!("poll_funds scheduler tick failed: {err:#}");
+                        tracing::error!(category = "poll", error = %format!("{err:#}"), "poll_funds scheduler tick failed");
                     }
                 }
             }

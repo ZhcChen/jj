@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="eyebrow">fund-monitor</p>
+    <h1>总览看板</h1>
+    <p class="summary">聚合最近轮询状态、基金数量和最新告警，快速查看当前系统健康度。</p>
+  </div>
+</header>
+
+<section class="metrics-grid">
+  {% for metric in metrics %}
+  <article class="metric-card">
+    <span class="detail-label">{{ metric.label }}</span>
+    <strong>{{ metric.value }}</strong>
+    <p class="muted">{{ metric.hint }}</p>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="page-grid dashboard-section">
+  <article class="card">
+    <div class="card-header">
+      <h2>最近任务</h2>
+      <span class="badge">{{ recent_jobs.len() }} 条</span>
+    </div>
+    {% if recent_jobs.len() == 0 %}
+    <div class="empty-state">
+      <p>当前还没有任何任务执行记录。</p>
+    </div>
+    {% else %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>任务</th>
+            <th>状态</th>
+            <th>开始时间</th>
+            <th>结束时间</th>
+            <th>备注</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in recent_jobs %}
+          <tr>
+            <td><code>{{ job.job_type }}</code></td>
+            <td><span class="status-badge {{ job.status }}">{{ job.status_label }}</span></td>
+            <td>{{ job.started_at }}</td>
+            <td>{{ job.finished_at }}</td>
+            <td class="notification-cell">{{ job.error_message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </article>
+
+  <article class="card">
+    <div class="card-header">
+      <h2>最新告警摘要</h2>
+      <span class="badge">{{ recent_alerts.len() }} 条</span>
+    </div>
+    {% if recent_alerts.len() == 0 %}
+    <div class="empty-state">
+      <p>当前还没有任何告警事件。</p>
+    </div>
+    {% else %}
+    <div class="stack-list">
+      {% for alert in recent_alerts %}
+      <div class="stack-list-item">
+        <div class="stack-list-main">
+          <strong>{{ alert.fund_label }}</strong>
+          <p>{{ alert.reason }}</p>
+        </div>
+        <div class="stack-list-meta">
+          <span class="status-badge {{ alert.status }}">{{ alert.status_label }}</span>
+          <span>{{ alert.triggered_at }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

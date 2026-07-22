@@ -1,7 +1,9 @@
 mod alerts;
+mod dashboard;
 mod funds;
 mod layout;
 mod routes;
+mod settings;
 
 use crate::app::state::AppState;
 use axum::Router;

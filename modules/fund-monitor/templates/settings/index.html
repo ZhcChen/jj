@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="eyebrow">fund-monitor</p>
+    <h1>系统配置</h1>
+    <p class="summary">查看当前运行参数、数据源和通知渠道配置，方便排查部署和运行状态。</p>
+  </div>
+</header>
+
+<section class="page-grid">
+  <article class="card">
+    <h2>运行参数</h2>
+    <div class="stack-list">
+      {% for item in runtime_settings %}
+      <div class="stack-list-item">
+        <div class="stack-list-main">
+          <strong>{{ item.label }}</strong>
+          <p>{{ item.hint }}</p>
+        </div>
+        <div class="stack-list-meta">
+          <code>{{ item.value }}</code>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="card">
+    <h2>数据源</h2>
+    <div class="stack-list">
+      {% for item in data_source_settings %}
+      <div class="stack-list-item">
+        <div class="stack-list-main">
+          <strong>{{ item.label }}</strong>
+          <p>{{ item.hint }}</p>
+        </div>
+        <div class="stack-list-meta">
+          <code>{{ item.value }}</code>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="card">
+    <h2>通知渠道</h2>
+    <div class="stack-list">
+      {% for item in notification_settings %}
+      <div class="stack-list-item">
+        <div class="stack-list-main">
+          <strong>{{ item.label }}</strong>
+          <p>{{ item.hint }}</p>
+        </div>
+        <div class="stack-list-meta">
+          <code>{{ item.value }}</code>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+{% endblock %}

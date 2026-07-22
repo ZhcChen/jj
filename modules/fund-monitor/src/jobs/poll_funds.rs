@@ -40,6 +40,11 @@ impl PollFundsJob {
             .start(ROUND_JOB_TYPE)
             .await
             .context("创建基金轮询任务记录失败")?;
+        tracing::info!(
+            category = "poll",
+            job_id = round_job.id,
+            "poll_funds round started"
+        );
 
         let funds = match fund_repo.list_active().await {
             Ok(funds) => funds,
@@ -117,11 +122,23 @@ impl PollFundsJob {
                     .await
                     {
                         had_rule_errors = true;
+                        tracing::error!(
+                            category = "rule",
+                            fund_code = %fund.code,
+                            error = %format!("{err:#}"),
+                            "rule evaluation failed after quote fetch"
+                        );
                         failure_messages.push(format!("{}: {err:#}", fund.code));
                     }
                 }
                 Err(err) => {
                     failed_funds += 1;
+                    tracing::error!(
+                        category = "fetch",
+                        fund_code = %fund.code,
+                        error = %err,
+                        "fund poll fetch failed"
+                    );
                     failure_messages.push(format!("{}: {}", fund.code, err.user_message()));
                 }
             }
@@ -135,6 +152,15 @@ impl PollFundsJob {
             build_summary_message(&summary, &failure_messages),
         )
         .await?;
+        tracing::info!(
+            category = "poll",
+            job_id = round_job.id,
+            total_funds = summary.total_funds,
+            succeeded_funds = summary.succeeded_funds,
+            failed_funds = summary.failed_funds,
+            status = %summary.status,
+            "poll_funds round finished"
+        );
 
         Ok(summary)
     }
@@ -250,8 +276,25 @@ async fn deliver_notification(
     };
 
     match notifier.send_alert(alert, fund, rule).await {
-        Ok(result) => Some(result),
-        Err(err) => Some(format!("telegram 发送失败：{err:#}")),
+        Ok(result) => {
+            tracing::info!(
+                category = "notification",
+                fund_code = %fund.code,
+                rule_id = rule.id,
+                "telegram notification sent"
+            );
+            Some(result)
+        }
+        Err(err) => {
+            tracing::error!(
+                category = "notification",
+                fund_code = %fund.code,
+                rule_id = rule.id,
+                error = %format!("{err:#}"),
+                "telegram notification failed"
+            );
+            Some(format!("telegram 发送失败：{err:#}"))
+        }
     }
 }
 

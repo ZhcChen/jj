@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="error-shell">
+  <p class="eyebrow">fund-monitor</p>
+  <h1>{{ status_code }}</h1>
+  <h2>{{ headline }}</h2>
+  <p class="summary">{{ message }}</p>
+  <div class="button-row">
+    <a class="button primary" href="/dashboard">返回总览</a>
+    <a class="button secondary" href="/funds">查看基金列表</a>
+  </div>
+</section>
+{% endblock %}
