@@ -1,6 +1,7 @@
 use crate::{
     app::state::AppState,
     domain::rule_engine::RuleEngine,
+    notifications::telegram::TelegramNotifier,
     providers::fund_source::fetch_and_store_fund_quote_for_job,
     storage::{
         alert_repo::AlertRepo, fund_repo::FundRepo, job_repo::JobRepo, quote_repo::QuoteRepo,
@@ -106,6 +107,7 @@ impl PollFundsJob {
                 Ok(quote) => {
                     succeeded_funds += 1;
                     if let Err(err) = evaluate_rules_for_fund(
+                        &self.state,
                         &fund,
                         &quote,
                         &enabled_rules,
@@ -178,6 +180,7 @@ fn build_summary_message(
 }
 
 async fn evaluate_rules_for_fund(
+    state: &AppState,
     fund: &crate::domain::fund::Fund,
     quote: &crate::domain::fund_quote::FundQuote,
     enabled_rules: &[crate::domain::monitor_rule::MonitorRule],
@@ -203,12 +206,30 @@ async fn evaluate_rules_for_fund(
         };
 
         let triggered_at = trigger.triggered_at;
-        alert_repo
+        let created_alert = alert_repo
             .create(trigger.into_new_alert())
             .await
             .with_context(|| {
                 format!("写入告警事件失败，rule_id={}，fund_id={}", rule.id, fund.id)
             })?;
+        let notification_result = deliver_notification(
+            state.telegram_notifier.as_deref(),
+            &created_alert,
+            fund,
+            rule,
+        )
+        .await;
+        if notification_result.is_some() {
+            alert_repo
+                .update_notification_result(created_alert.id, notification_result.as_deref())
+                .await
+                .with_context(|| {
+                    format!(
+                        "更新通知结果失败，alert_id={}，fund_id={}",
+                        created_alert.id, fund.id
+                    )
+                })?;
+        }
         rule_repo
             .mark_triggered(rule.id, triggered_at)
             .await
@@ -216,6 +237,22 @@ async fn evaluate_rules_for_fund(
     }
 
     Ok(())
+}
+
+async fn deliver_notification(
+    notifier: Option<&TelegramNotifier>,
+    alert: &crate::domain::alert_event::AlertEvent,
+    fund: &crate::domain::fund::Fund,
+    rule: &crate::domain::monitor_rule::MonitorRule,
+) -> Option<String> {
+    let Some(notifier) = notifier else {
+        return None;
+    };
+
+    match notifier.send_alert(alert, fund, rule).await {
+        Ok(result) => Some(result),
+        Err(err) => Some(format!("telegram 发送失败：{err:#}")),
+    }
 }
 
 async fn finish_round_job(

@@ -15,6 +15,9 @@ async fn bootstrap_initializes_sqlite_and_runs_migrations() {
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
         poll_interval_seconds: 300,
+        telegram_api_base_url: "https://api.telegram.org".to_owned(),
+        telegram_bot_token: None,
+        telegram_chat_id: None,
     };
 
     let state = build_state(config).await.expect("build app state");

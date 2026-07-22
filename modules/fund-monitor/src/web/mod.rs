@@ -1,3 +1,4 @@
+mod alerts;
 mod funds;
 mod layout;
 mod routes;

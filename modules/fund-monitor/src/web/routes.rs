@@ -8,7 +8,7 @@ use axum::{
 };
 use rust_embed::Embed;
 
-use super::funds;
+use super::{alerts, funds};
 
 #[derive(Embed)]
 #[folder = "web/"]
@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/", get(index))
         .route("/healthz", get(healthz))
         .route("/assets/{*path}", get(asset))
+        .merge(alerts::routes())
         .merge(funds::routes())
 }
 

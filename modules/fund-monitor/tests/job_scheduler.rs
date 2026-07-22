@@ -248,6 +248,9 @@ async fn test_state_with_base_url(
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
         poll_interval_seconds,
+        telegram_api_base_url: "https://api.telegram.org".to_owned(),
+        telegram_bot_token: None,
+        telegram_chat_id: None,
     };
 
     let source = EastmoneyFundSource::new(HttpClient::new(base_url).expect("http client"));
