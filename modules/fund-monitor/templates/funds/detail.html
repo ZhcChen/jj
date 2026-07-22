@@ -5,16 +5,63 @@
   <div>
     <p class="eyebrow">fund-monitor</p>
     <h1>基金详情</h1>
-    <p class="summary">更新基金元数据，或将基金从当前监控池中停用。</p>
+    <p class="summary">查看最近抓取结果，手动抓取单基金数据，或更新当前基金元数据。</p>
   </div>
-  <a class="button secondary" href="/funds">返回列表</a>
+  <div class="page-actions">
+    <form class="inline-form" method="post" action="/funds/{{ fund.id }}/fetch">
+      <button class="button primary" type="submit">立即抓取</button>
+    </form>
+    <a class="button secondary" href="/funds">返回列表</a>
+  </div>
 </header>
 
 {% if has_error %}
 <section class="message error">{{ error_message }}</section>
 {% endif %}
 
+{% if has_notice %}
+<section class="message success">{{ notice_message }}</section>
+{% endif %}
+
 <section class="detail-grid">
+  <article class="card">
+    <div class="card-header">
+      <h2>最近一次抓取</h2>
+      {% if has_latest_quote %}
+      <span class="badge">已入库</span>
+      {% else %}
+      <span class="badge">暂无数据</span>
+      {% endif %}
+    </div>
+
+    {% if has_latest_quote %}
+    <div class="metric-grid">
+      <div class="metric">
+        <span class="detail-label">单位净值</span>
+        <strong>{{ latest_quote.unit_nav }}</strong>
+      </div>
+      <div class="metric">
+        <span class="detail-label">估值</span>
+        <strong>{{ latest_quote.estimated_nav }}</strong>
+      </div>
+      <div class="metric">
+        <span class="detail-label">涨跌幅</span>
+        <strong>{{ latest_quote.change_rate }}</strong>
+      </div>
+      <div class="metric">
+        <span class="detail-label">抓取时间</span>
+        <strong>{{ latest_quote.fetched_at }}</strong>
+      </div>
+    </div>
+    <p class="muted">数据源：{{ latest_quote.source }}</p>
+    {% else %}
+    <div class="empty-state">
+      <p>当前还没有任何抓取记录。</p>
+      <p>点击“立即抓取”后，会将最新基金行情写入历史数据表。</p>
+    </div>
+    {% endif %}
+  </article>
+
   <article class="card">
     <div class="detail-row">
       <span class="detail-label">基金代码</span>
@@ -53,5 +100,42 @@
     </form>
   </article>
 </section>
-{% endblock %}
 
+<section class="card">
+  <div class="card-header">
+    <h2>最近抓取历史</h2>
+    <span class="badge">{{ quote_history.len() }} 条</span>
+  </div>
+
+  {% if quote_history.len() == 0 %}
+  <div class="empty-state">
+    <p>还没有历史抓取记录。</p>
+  </div>
+  {% else %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>抓取时间</th>
+          <th>单位净值</th>
+          <th>估值</th>
+          <th>涨跌幅</th>
+          <th>来源</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for quote in quote_history %}
+        <tr>
+          <td>{{ quote.fetched_at }}</td>
+          <td>{{ quote.unit_nav }}</td>
+          <td>{{ quote.estimated_nav }}</td>
+          <td>{{ quote.change_rate }}</td>
+          <td>{{ quote.source }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,8 +1,14 @@
 use axum::{
+    Router,
     body::Body,
     http::{Request, StatusCode, header},
+    routing::get,
 };
-use fund_monitor::{app::config::AppConfig, app_router, build_state};
+use fund_monitor::{
+    app::config::AppConfig,
+    app_router, build_state, build_state_with_fund_source,
+    providers::{fund_source::EastmoneyFundSource, http_client::HttpClient},
+};
 use http_body_util::BodyExt;
 use tempfile::tempdir;
 use tower::util::ServiceExt;
@@ -188,24 +194,75 @@ async fn invalid_form_returns_error_without_writing_data() {
     assert!(html.contains("暂无基金"));
 }
 
-async fn test_app() -> axum::Router {
+#[tokio::test]
+async fn manual_fetch_route_shows_latest_quote_in_detail_page() {
+    let server = spawn_fixture_server(valid_fixture("000001", "示例基金", 1.2345, 0.88)).await;
+    let app = test_app_with_source(&server.base_url).await;
+
+    create_fund(&app, "000001", "示例基金").await;
+
+    let list_html = get_html(&app, "/funds").await;
+    let detail_path = extract_first_detail_path(&list_html).expect("detail path");
+    let fetch_path = format!("{detail_path}/fetch");
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(&fetch_path)
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("fetch response");
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response
+            .headers()
+            .get(header::LOCATION)
+            .and_then(|value| value.to_str().ok()),
+        Some("/funds/1?fetched=1")
+    );
+
+    let detail_html = get_html(&app, "/funds/1?fetched=1").await;
+    assert!(detail_html.contains("已完成最近一次基金数据抓取"));
+    assert!(detail_html.contains("1.2345"));
+    assert!(detail_html.contains("0.88%"));
+    assert!(detail_html.contains("eastmoney/pingzhongdata"));
+}
+
+async fn test_app() -> Router {
+    let config = test_config();
+    let state = build_state(config).await.expect("build state");
+    app_router(state)
+}
+
+async fn test_app_with_source(base_url: &str) -> Router {
+    let config = test_config();
+    let source = EastmoneyFundSource::new(HttpClient::new(base_url).expect("http client"));
+    let state = build_state_with_fund_source(config, source)
+        .await
+        .expect("build state");
+    app_router(state)
+}
+
+fn test_config() -> AppConfig {
     let temp_dir = tempdir().expect("create temp dir");
     let root = temp_dir.path().to_path_buf();
     std::mem::forget(temp_dir);
     let db_path = root.join("fund-web.db");
     let database_url = format!("sqlite://{}", db_path.display());
 
-    let config = AppConfig {
+    AppConfig {
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
         poll_interval_seconds: 300,
-    };
-
-    let state = build_state(config).await.expect("build state");
-    app_router(state)
+    }
 }
 
-async fn create_fund(app: &axum::Router, code: &str, name: &str) {
+async fn create_fund(app: &Router, code: &str, name: &str) {
     let payload = format!("code={code}&name={name}");
     let response = app
         .clone()
@@ -223,7 +280,7 @@ async fn create_fund(app: &axum::Router, code: &str, name: &str) {
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
 }
 
-async fn get_html(app: &axum::Router, path: &str) -> String {
+async fn get_html(app: &Router, path: &str) -> String {
     let response = app
         .clone()
         .oneshot(
@@ -246,4 +303,55 @@ fn extract_first_detail_path(html: &str) -> Option<String> {
     let rest = &html[start + 6..];
     let end = rest.find('"')?;
     Some(rest[..end].to_owned())
+}
+
+struct FixtureServer {
+    base_url: String,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+impl Drop for FixtureServer {
+    fn drop(&mut self) {
+        self.handle.abort();
+    }
+}
+
+async fn spawn_fixture_server(body: String) -> FixtureServer {
+    let app = Router::new().route(
+        "/pingzhongdata/000001.js",
+        get({
+            let body = body.clone();
+            move || {
+                let body = body.clone();
+                async move {
+                    (
+                        [(
+                            header::CONTENT_TYPE,
+                            "application/javascript; charset=utf-8",
+                        )],
+                        body,
+                    )
+                }
+            }
+        }),
+    );
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind fixture server");
+    let addr = listener.local_addr().expect("fixture server addr");
+    let handle = tokio::spawn(async move {
+        axum::serve(listener, app).await.expect("serve fixture");
+    });
+
+    FixtureServer {
+        base_url: format!("http://{addr}"),
+        handle,
+    }
+}
+
+fn valid_fixture(code: &str, name: &str, unit_nav: f64, change_rate: f64) -> String {
+    format!(
+        r#"var fS_name = "{name}";var fS_code = "{code}";var Data_netWorthTrend = [{{"x":1721606400000,"y":1.1111,"equityReturn":0.11}},{{"x":1721692800000,"y":{unit_nav},"equityReturn":{change_rate}}}];"#
+    )
 }

@@ -74,6 +74,12 @@ body {
   margin-bottom: 28px;
 }
 
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .hero {
   margin-bottom: 32px;
 }
@@ -238,6 +244,12 @@ h1 {
   color: #ffd7d7;
 }
 
+.message.success {
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  background: rgba(12, 90, 52, 0.3);
+  color: #d5ffe6;
+}
+
 .empty-state {
   padding: 20px 0 8px;
   color: #b8c3d5;
@@ -270,6 +282,35 @@ h1 {
 .danger-card p {
   color: #c5d0df;
   line-height: 1.7;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.metric {
+  padding: 16px;
+  border: 1px solid rgba(146, 164, 192, 0.16);
+  border-radius: 14px;
+  background: rgba(9, 14, 28, 0.78);
+}
+
+.metric strong {
+  display: block;
+  margin-top: 10px;
+  color: #f5f8ff;
+  font-size: 20px;
+}
+
+.muted {
+  color: #97abc8;
 }
 
 @media (max-width: 860px) {
