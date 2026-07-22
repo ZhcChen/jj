@@ -13,9 +13,8 @@ use axum::{
     response::{IntoResponse, Response},
     routing::get,
 };
-use time::{OffsetDateTime, UtcOffset};
 
-use super::layout::render_html;
+use super::layout::{display_datetime, render_html};
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/dashboard", get(show_dashboard))
@@ -189,9 +188,4 @@ fn status_label(status: &str) -> &'static str {
         "ignored" => "已忽略",
         _ => "未知状态",
     }
-}
-
-fn display_datetime(value: OffsetDateTime) -> String {
-    let offset = UtcOffset::from_hms(8, 0, 0).expect("valid Asia/Shanghai UTC offset");
-    format!("{}", value.to_offset(offset))
 }

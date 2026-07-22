@@ -28,118 +28,134 @@
 {% endif %}
 
 <section class="detail-grid">
-  <article class="card">
-    <div class="card-header">
-      <h2>最近一次抓取</h2>
+  <div class="detail-main-stack">
+    <article class="card detail-snapshot-card">
+      <div class="card-header">
+        <h2>最近一次抓取</h2>
+        {% if has_latest_quote %}
+        <span class="badge">已入库</span>
+        {% else %}
+        <span class="badge">暂无数据</span>
+        {% endif %}
+      </div>
+
       {% if has_latest_quote %}
-      <span class="badge">已入库</span>
+      <div class="metric-grid detail-metric-grid">
+        <div class="metric">
+          <span class="detail-label">单位净值</span>
+          <strong>{{ latest_quote.unit_nav }}</strong>
+        </div>
+        <div class="metric">
+          <span class="detail-label">估值</span>
+          <strong>{{ latest_quote.estimated_nav }}</strong>
+        </div>
+        <div class="metric">
+          <span class="detail-label">涨跌幅</span>
+          <strong>{{ latest_quote.change_rate }}</strong>
+        </div>
+      </div>
+      <div class="detail-meta-strip">
+        <div class="detail-meta-item">
+          <span class="detail-label">抓取时间</span>
+          <strong>{{ latest_quote.fetched_at }}</strong>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-label">数据源</span>
+          <strong>{{ latest_quote.source }}</strong>
+        </div>
+      </div>
       {% else %}
-      <span class="badge">暂无数据</span>
+      <div class="empty-state">
+        <p>当前还没有任何抓取记录。</p>
+        <p>点击“立即抓取”后，会将最新基金行情写入历史数据表。</p>
+      </div>
       {% endif %}
-    </div>
+    </article>
 
-    {% if has_latest_quote %}
-    <div class="metric-grid">
-      <div class="metric">
-        <span class="detail-label">单位净值</span>
-        <strong>{{ latest_quote.unit_nav }}</strong>
+    <section class="card card-spacious detail-history-card">
+      <div class="card-header">
+        <h2>最近抓取历史</h2>
+        <span class="badge">{{ quote_history.len() }} 条</span>
       </div>
-      <div class="metric">
-        <span class="detail-label">估值</span>
-        <strong>{{ latest_quote.estimated_nav }}</strong>
+
+      {% if quote_history.len() == 0 %}
+      <div class="empty-state">
+        <p>还没有历史抓取记录。</p>
       </div>
-      <div class="metric">
-        <span class="detail-label">涨跌幅</span>
-        <strong>{{ latest_quote.change_rate }}</strong>
+      {% else %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>抓取时间</th>
+              <th>单位净值</th>
+              <th>估值</th>
+              <th>涨跌幅</th>
+              <th>来源</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for quote in quote_history %}
+            <tr>
+              <td>{{ quote.fetched_at }}</td>
+              <td>{{ quote.unit_nav }}</td>
+              <td>{{ quote.estimated_nav }}</td>
+              <td>{{ quote.change_rate }}</td>
+              <td>{{ quote.source }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <div class="metric">
-        <span class="detail-label">抓取时间</span>
-        <strong>{{ latest_quote.fetched_at }}</strong>
-      </div>
-    </div>
-    <p class="muted">数据源：{{ latest_quote.source }}</p>
-    {% else %}
-    <div class="empty-state">
-      <p>当前还没有任何抓取记录。</p>
-      <p>点击“立即抓取”后，会将最新基金行情写入历史数据表。</p>
-    </div>
-    {% endif %}
-  </article>
-
-  <article class="card">
-    <div class="detail-row detail-row-leading">
-      <span class="detail-label">基金代码</span>
-      <code>{{ fund.code }}</code>
-    </div>
-
-    <form class="stack-form" method="post" action="/funds/{{ fund.id }}">
-      <label>
-        <span>基金名称</span>
-        <input type="text" name="name" value="{{ fund.name }}" />
-      </label>
-      <label>
-        <span>分组</span>
-        <input type="text" name="group_name" value="{{ fund.group_name }}" />
-      </label>
-      <label>
-        <span>标签</span>
-        <input type="text" name="tags" value="{{ fund.tags }}" />
-      </label>
-      <label>
-        <span>备注</span>
-        <textarea name="note" rows="5">{{ fund.note }}</textarea>
-      </label>
-
-      <div class="button-row">
-        <button class="button primary" type="submit">保存修改</button>
-      </div>
-    </form>
-  </article>
-
-  <article class="card danger-card">
-    <h2>停用基金</h2>
-    <p>停用后，该基金会从当前基金池列表中移除，不再参与后续轮询、规则判断与告警通知。</p>
-    <form method="post" action="/funds/{{ fund.id }}/disable">
-      <button class="button danger" type="submit">停用该基金</button>
-    </form>
-  </article>
-</section>
-
-<section class="card card-spacious">
-  <div class="card-header">
-    <h2>最近抓取历史</h2>
-    <span class="badge">{{ quote_history.len() }} 条</span>
+      {% endif %}
+    </section>
   </div>
 
-  {% if quote_history.len() == 0 %}
-  <div class="empty-state">
-    <p>还没有历史抓取记录。</p>
+  <div class="detail-side-stack">
+    <article class="card detail-form-card">
+      <div class="card-header">
+        <h2>基金资料</h2>
+        <span class="badge">可编辑</span>
+      </div>
+
+      <div class="detail-row detail-row-leading">
+        <span class="detail-label">基金代码</span>
+        <code>{{ fund.code }}</code>
+      </div>
+
+      <form class="stack-form" method="post" action="/funds/{{ fund.id }}">
+        <label>
+          <span>基金名称</span>
+          <input type="text" name="name" value="{{ fund.name }}" />
+        </label>
+        <div class="inline-field-grid detail-inline-grid">
+          <label>
+            <span>分组</span>
+            <input type="text" name="group_name" value="{{ fund.group_name }}" />
+          </label>
+          <label>
+            <span>标签</span>
+            <input type="text" name="tags" value="{{ fund.tags }}" />
+          </label>
+        </div>
+        <label class="detail-note-field">
+          <span>备注</span>
+          <textarea name="note" rows="4">{{ fund.note }}</textarea>
+        </label>
+
+        <div class="button-row">
+          <button class="button primary" type="submit">保存修改</button>
+        </div>
+      </form>
+    </article>
+
+    <article class="card danger-card detail-danger-card">
+      <h2>停用基金</h2>
+      <p>停用后，该基金会从当前基金池列表中移除，不再参与后续轮询、规则判断与告警通知。</p>
+      <form method="post" action="/funds/{{ fund.id }}/disable">
+        <button class="button danger" type="submit">停用该基金</button>
+      </form>
+    </article>
   </div>
-  {% else %}
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>抓取时间</th>
-          <th>单位净值</th>
-          <th>估值</th>
-          <th>涨跌幅</th>
-          <th>来源</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for quote in quote_history %}
-        <tr>
-          <td>{{ quote.fetched_at }}</td>
-          <td>{{ quote.unit_nav }}</td>
-          <td>{{ quote.estimated_nav }}</td>
-          <td>{{ quote.change_rate }}</td>
-          <td>{{ quote.source }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
 </section>
 {% endblock %}

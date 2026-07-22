@@ -16,9 +16,8 @@ use axum::{
     routing::{get, post},
 };
 use serde::Deserialize;
-use time::{OffsetDateTime, UtcOffset};
 
-use super::layout::render_html;
+use super::layout::{display_datetime, render_html};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -410,9 +409,4 @@ fn format_optional_decimal(value: Option<f64>, precision: usize, suffix: &str) -
         Some(value) => format!("{value:.precision$}{suffix}"),
         None => "-".to_owned(),
     }
-}
-
-fn display_datetime(value: OffsetDateTime) -> String {
-    let offset = UtcOffset::from_hms(8, 0, 0).expect("valid Asia/Shanghai UTC offset");
-    format!("{}", value.to_offset(offset))
 }

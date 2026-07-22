@@ -14,9 +14,8 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::collections::{BTreeSet, HashMap};
-use time::{OffsetDateTime, UtcOffset};
 
-use super::layout::render_html;
+use super::layout::{display_datetime, render_html};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -433,9 +432,4 @@ fn updated_notice_message(updated: &str) -> Option<String> {
         "deleted" => Some("已删除该规则".to_owned()),
         _ => None,
     }
-}
-
-fn display_datetime(value: OffsetDateTime) -> String {
-    let offset = UtcOffset::from_hms(8, 0, 0).expect("valid Asia/Shanghai UTC offset");
-    format!("{}", value.to_offset(offset))
 }

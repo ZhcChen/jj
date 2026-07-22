@@ -131,6 +131,7 @@ fn parse_pingzhongdata(
     expected_code: &str,
     body: &str,
 ) -> Result<FetchedFundSnapshot, FundIngestError> {
+    let fetched_at = OffsetDateTime::now_utc();
     let normalized = body.trim_start_matches('\u{feff}');
     let code = capture_required(&CODE_RE, normalized, "基金代码")?;
     if code != expected_code {
@@ -147,10 +148,6 @@ fn parse_pingzhongdata(
 
     let latest = history.last().ok_or_else(|| {
         FundIngestError::invalid_source_data("基金数据源未返回任何净值历史".to_owned())
-    })?;
-
-    let fetched_at = OffsetDateTime::from_unix_timestamp(latest.x / 1_000).map_err(|_| {
-        FundIngestError::invalid_source_data("基金数据源返回了非法时间戳".to_owned())
     })?;
 
     let estimated_nav = capture_optional_decimal(&ESTIMATED_NAV_RE, normalized);
@@ -211,6 +208,7 @@ fn capture_optional_decimal(regex: &Regex, body: &str) -> Option<f64> {
 struct NetWorthPoint {
     #[serde(rename = "equityReturn")]
     equity_return: Option<f64>,
-    x: i64,
+    #[serde(rename = "x")]
+    _timestamp_ms: i64,
     y: f64,
 }

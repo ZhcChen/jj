@@ -9,6 +9,7 @@ use fund_monitor::{
     storage::{fund_repo::FundRepo, job_repo::JobRepo, quote_repo::QuoteRepo},
 };
 use tempfile::tempdir;
+use time::OffsetDateTime;
 
 #[tokio::test]
 async fn valid_provider_response_writes_quote_and_success_job() {
@@ -18,16 +19,20 @@ async fn valid_provider_response_writes_quote_and_success_job() {
     let fund = create_fund(&state.pool, "000001", "示例基金").await;
     let quote_repo = QuoteRepo::new(state.pool.clone());
     let job_repo = JobRepo::new(state.pool.clone());
+    let fetch_started_at = OffsetDateTime::now_utc();
 
     let quote =
         fetch_and_store_fund_quote(state.fund_source.as_ref(), &fund, &quote_repo, &job_repo)
             .await
             .expect("ingest quote");
+    let fetch_finished_at = OffsetDateTime::now_utc();
 
     assert_eq!(quote.unit_nav, Some(1.2401));
     assert_eq!(quote.estimated_nav, None);
     assert_eq!(quote.change_rate, Some(0.45));
     assert_eq!(quote.source, "eastmoney/pingzhongdata");
+    assert!(quote.fetched_at >= fetch_started_at);
+    assert!(quote.fetched_at <= fetch_finished_at);
 
     let latest = quote_repo
         .latest_for_fund(fund.id)
@@ -35,6 +40,7 @@ async fn valid_provider_response_writes_quote_and_success_job() {
         .expect("latest quote")
         .expect("quote exists");
     assert_eq!(latest.id, quote.id);
+    assert_eq!(latest.fetched_at, quote.fetched_at);
 
     let jobs = job_repo.list_recent(5).await.expect("job list");
     assert_eq!(jobs.len(), 1);

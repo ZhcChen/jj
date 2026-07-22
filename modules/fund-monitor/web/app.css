@@ -422,6 +422,14 @@ h1 {
 
 .detail-grid {
   grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  align-items: start;
+}
+
+.detail-main-stack,
+.detail-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .card,
@@ -705,6 +713,10 @@ h1 {
   margin-bottom: 14px;
 }
 
+.detail-metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .metric {
   padding: 14px;
   border: 1px solid var(--line);
@@ -721,8 +733,43 @@ h1 {
   line-height: 1.2;
 }
 
+.detail-meta-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.detail-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(250, 252, 255, 0.94);
+}
+
+.detail-meta-item strong {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .detail-row-leading {
   margin-bottom: 14px;
+}
+
+.detail-form-card .card-header {
+  margin-bottom: 14px;
+}
+
+.detail-inline-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-note-field textarea {
+  min-height: 128px;
 }
 
 .detail-row code {
@@ -811,6 +858,10 @@ h1 {
   grid-column: 1 / -1;
   border-color: rgba(239, 100, 119, 0.16);
   background: rgba(255, 248, 249, 0.94);
+}
+
+.detail-danger-card {
+  grid-column: auto;
 }
 
 .error-shell {
@@ -919,7 +970,9 @@ code {
 
   .nav-links,
   .inline-field-grid,
-  .inline-field-grid.triple {
+  .inline-field-grid.triple,
+  .detail-metric-grid,
+  .detail-meta-strip {
     grid-template-columns: 1fr;
   }
 

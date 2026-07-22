@@ -11,9 +11,8 @@ use axum::{
     routing::{get, post},
 };
 use serde::Deserialize;
-use time::{OffsetDateTime, UtcOffset};
 
-use super::layout::render_html;
+use super::layout::{display_datetime, render_html};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -141,9 +140,4 @@ fn status_updated_notice_message(status: &str) -> Option<String> {
         "ignored" => Some("已将告警标记为已忽略".to_owned()),
         _ => None,
     }
-}
-
-fn display_datetime(value: OffsetDateTime) -> String {
-    let offset = UtcOffset::from_hms(8, 0, 0).expect("valid Asia/Shanghai UTC offset");
-    format!("{}", value.to_offset(offset))
 }
