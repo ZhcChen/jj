@@ -1,7 +1,7 @@
 use fund_monitor::{
     app::config::AppConfig,
-    build_state,
-    storage::{app_setting_repo::AppSettingRepo, db},
+    build_state, ensure_default_funds,
+    storage::{app_setting_repo::AppSettingRepo, db, fund_repo::FundRepo},
 };
 use tempfile::tempdir;
 
@@ -35,4 +35,23 @@ async fn bootstrap_initializes_sqlite_and_runs_migrations() {
 
     assert_eq!(saved.key, "poll_interval_seconds");
     assert_eq!(saved.value, "300");
+
+    ensure_default_funds(&state.pool)
+        .await
+        .expect("seed default fund");
+    ensure_default_funds(&state.pool)
+        .await
+        .expect("seed default fund idempotently");
+
+    let funds = FundRepo::new(state.pool.clone())
+        .list_active()
+        .await
+        .expect("list active funds");
+    let default_fund = funds
+        .iter()
+        .find(|fund| fund.code == "012734")
+        .expect("default fund exists");
+
+    assert_eq!(default_fund.name, "易方达中证人工智能主题ETF联接C");
+    assert_eq!(funds.iter().filter(|fund| fund.code == "012734").count(), 1);
 }
