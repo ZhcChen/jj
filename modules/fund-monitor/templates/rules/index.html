@@ -3,9 +3,12 @@
 {% block content %}
 <header class="page-header">
   <div>
-    <p class="eyebrow">fund-monitor</p>
+    <p class="eyebrow">monitor rules</p>
     <h1>规则管理</h1>
-    <p class="summary">新增监控规则，管理启停状态，并维护涨跌幅、净值区间与估值偏离规则。</p>
+    <p class="summary">规则决定何时需要提醒你。这里统一维护作用范围、阈值条件、冷却时间和启停状态。</p>
+  </div>
+  <div class="page-actions">
+    <a class="button secondary" href="/alerts">查看告警</a>
   </div>
 </header>
 
@@ -17,9 +20,10 @@
 <section class="message success">{{ notice_message }}</section>
 {% endif %}
 
-<section class="page-grid">
+<section class="workspace-grid workspace-grid-rule">
   <article class="card">
     <h2>新增规则</h2>
+    <p class="panel-note">先选目标范围，再填写对应阈值；每条规则至少需要一个有效条件。</p>
     <form class="stack-form" method="post" action="/rules">
       <label>
         <span>目标范围</span>
@@ -120,6 +124,7 @@
       <h2>当前规则</h2>
       <span class="badge">{{ rules.len() }} 条</span>
     </div>
+    <p class="panel-note">建议优先保持简洁规则，等观察到稳定样本后，再逐步增加更细的条件组合。</p>
 
     {% if rules.len() == 0 %}
     <div class="empty-state">

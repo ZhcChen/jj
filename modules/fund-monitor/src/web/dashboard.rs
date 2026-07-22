@@ -51,6 +51,7 @@ struct DashboardAlertView {
 #[template(path = "dashboard/index.html")]
 struct DashboardTemplate {
     title: &'static str,
+    nav_key: &'static str,
     metrics: Vec<DashboardMetric>,
     recent_jobs: Vec<DashboardJobView>,
     recent_alerts: Vec<DashboardAlertView>,
@@ -128,6 +129,7 @@ async fn build_dashboard_template(state: &AppState) -> Result<DashboardTemplate,
 
     Ok(DashboardTemplate {
         title: "总览看板",
+        nav_key: "dashboard",
         metrics,
         recent_jobs: recent_jobs.into_iter().map(map_job_view).collect(),
         recent_alerts: recent_alerts.into_iter().map(map_alert_view).collect(),

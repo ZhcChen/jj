@@ -86,6 +86,7 @@ struct FundQuoteView {
 #[template(path = "funds/index.html")]
 struct FundsIndexTemplate {
     title: &'static str,
+    nav_key: &'static str,
     funds: Vec<FundListItem>,
     has_error: bool,
     error_message: String,
@@ -96,6 +97,7 @@ struct FundsIndexTemplate {
 #[template(path = "funds/detail.html")]
 struct FundDetailTemplate {
     title: &'static str,
+    nav_key: &'static str,
     fund: FundDetailView,
     has_error: bool,
     error_message: String,
@@ -115,6 +117,7 @@ pub async fn list_funds(State(state): State<AppState>) -> Result<impl IntoRespon
 
     render_html(&FundsIndexTemplate {
         title: "基金列表",
+        nav_key: "funds",
         funds: map_fund_list(funds),
         has_error: false,
         error_message: String::new(),
@@ -142,6 +145,7 @@ pub async fn create_fund(
 
         let template = FundsIndexTemplate {
             title: "基金列表",
+            nav_key: "funds",
             funds: map_fund_list(funds),
             has_error: true,
             error_message: "基金代码和名称不能为空".to_owned(),
@@ -164,6 +168,7 @@ pub async fn create_fund(
 
         let template = FundsIndexTemplate {
             title: "基金列表",
+            nav_key: "funds",
             funds: map_fund_list(funds),
             has_error: true,
             error_message: "基金代码已存在".to_owned(),
@@ -388,6 +393,7 @@ async fn build_fund_detail_template(
 
     Ok(FundDetailTemplate {
         title: "基金详情",
+        nav_key: "funds",
         fund: map_fund_detail(fund),
         has_error: error_message.is_some(),
         error_message: error_message.unwrap_or_default(),

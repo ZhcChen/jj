@@ -3,9 +3,9 @@
 {% block content %}
 <header class="page-header">
   <div>
-    <p class="eyebrow">fund-monitor</p>
+    <p class="eyebrow">fund universe</p>
     <h1>基金列表</h1>
-    <p class="summary">维护基金池，后续监控、抓取、告警都从这里开始。</p>
+    <p class="summary">这里定义监控范围。基金元数据、分组和标签会直接影响后续抓取、规则命中与告警归类。</p>
   </div>
 </header>
 
@@ -13,9 +13,10 @@
 <section class="message error">{{ error_message }}</section>
 {% endif %}
 
-<section class="page-grid">
+<section class="workspace-grid workspace-grid-form-first">
   <article class="card">
     <h2>新增基金</h2>
+    <p class="panel-note">先把长期关注的基金放进池子里，再逐步补充分组、标签和关注原因。</p>
     <form class="stack-form" method="post" action="/funds">
       <label>
         <span>基金代码</span>
@@ -46,6 +47,7 @@
       <h2>当前基金池</h2>
       <span class="badge">{{ funds.len() }} 只</span>
     </div>
+    <p class="panel-note">建议保持分组命名一致，后续可以直接在规则页按分组批量生效。</p>
 
     {% if funds.len() == 0 %}
     <div class="empty-state">
@@ -83,4 +85,3 @@
   </article>
 </section>
 {% endblock %}
-

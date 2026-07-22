@@ -24,6 +24,7 @@ struct SettingItem {
 #[template(path = "settings/index.html")]
 struct SettingsTemplate {
     title: &'static str,
+    nav_key: &'static str,
     runtime_settings: Vec<SettingItem>,
     data_source_settings: Vec<SettingItem>,
     notification_settings: Vec<SettingItem>,
@@ -33,6 +34,7 @@ async fn show_settings(State(state): State<AppState>) -> Response {
     let config = state.config.as_ref();
     let template = SettingsTemplate {
         title: "系统配置",
+        nav_key: "settings",
         runtime_settings: vec![
             SettingItem {
                 label: "监听地址",

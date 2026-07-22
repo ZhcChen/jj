@@ -54,6 +54,7 @@ impl Error for FundIngestError {}
 #[template(path = "error.html")]
 struct ErrorPageTemplate {
     title: String,
+    nav_key: &'static str,
     status_code: u16,
     headline: String,
     message: String,
@@ -66,6 +67,7 @@ pub fn render_error_page(
 ) -> Response {
     let template = ErrorPageTemplate {
         title: format!("{} {}", status.as_u16(), default_headline(status)),
+        nav_key: "error",
         status_code: status.as_u16(),
         headline: headline.into(),
         message: message.into(),

@@ -3,9 +3,13 @@
 {% block content %}
 <header class="page-header">
   <div>
-    <p class="eyebrow">fund-monitor</p>
-    <h1>基金详情</h1>
-    <p class="summary">查看最近抓取结果，手动抓取单基金数据，或更新当前基金元数据。</p>
+    <p class="eyebrow">fund detail</p>
+    <h1>{{ fund.name }}</h1>
+    <p class="summary">基金代码 {{ fund.code }}。在这里处理单基金抓取、元数据维护与最近历史回看。</p>
+    <div class="hero-inline-meta">
+      <span class="hero-chip">代码 {{ fund.code }}</span>
+      <span class="hero-chip">本地监控对象</span>
+    </div>
   </div>
   <div class="page-actions">
     <form class="inline-form" method="post" action="/funds/{{ fund.id }}/fetch">
@@ -63,7 +67,7 @@
   </article>
 
   <article class="card">
-    <div class="detail-row">
+    <div class="detail-row detail-row-leading">
       <span class="detail-label">基金代码</span>
       <code>{{ fund.code }}</code>
     </div>
@@ -94,14 +98,14 @@
 
   <article class="card danger-card">
     <h2>停用基金</h2>
-    <p>停用后，该基金会从当前基金池列表中移除，不再参与后续监控任务。</p>
+    <p>停用后，该基金会从当前基金池列表中移除，不再参与后续轮询、规则判断与告警通知。</p>
     <form method="post" action="/funds/{{ fund.id }}/disable">
       <button class="button danger" type="submit">停用该基金</button>
     </form>
   </article>
 </section>
 
-<section class="card">
+<section class="card card-spacious">
   <div class="card-header">
     <h2>最近抓取历史</h2>
     <span class="badge">{{ quote_history.len() }} 条</span>

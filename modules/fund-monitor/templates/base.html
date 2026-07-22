@@ -3,25 +3,73 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4efe6" />
     <title>{{ title }} - 基金监控</title>
     <link rel="stylesheet" href="/assets/app.css" />
   </head>
   <body>
+    <div class="page-aura page-aura-left"></div>
+    <div class="page-aura page-aura-right"></div>
     <div class="shell">
       <aside class="shell-nav">
-        <a class="brand" href="/dashboard">基金监控</a>
-        <nav class="nav-links">
-          <a href="/dashboard">总览看板</a>
-          <a href="/funds">基金列表</a>
-          <a href="/rules">规则管理</a>
-          <a href="/alerts">告警列表</a>
-          <a href="/settings">系统配置</a>
+        <div class="nav-brand-block">
+          <a class="brand" href="/dashboard">
+            <span class="brand-mark">FM</span>
+            <span class="brand-copy">
+              <strong>基金监控</strong>
+              <small>Fund Monitor Workspace</small>
+            </span>
+          </a>
+          <p class="nav-summary">盯住净值、估值偏离与通知执行，把基金监控从零散记录整理成稳定工作台。</p>
+        </div>
+
+        <nav class="nav-links" aria-label="主导航">
+          <a class="nav-link {% if nav_key == "dashboard" %}active{% endif %}" href="/dashboard">
+            <span>总览看板</span>
+            <small>Dashboard</small>
+          </a>
+          <a class="nav-link {% if nav_key == "funds" %}active{% endif %}" href="/funds">
+            <span>基金列表</span>
+            <small>Funds</small>
+          </a>
+          <a class="nav-link {% if nav_key == "rules" %}active{% endif %}" href="/rules">
+            <span>规则管理</span>
+            <small>Rules</small>
+          </a>
+          <a class="nav-link {% if nav_key == "alerts" %}active{% endif %}" href="/alerts">
+            <span>告警列表</span>
+            <small>Alerts</small>
+          </a>
+          <a class="nav-link {% if nav_key == "settings" %}active{% endif %}" href="/settings">
+            <span>系统配置</span>
+            <small>Settings</small>
+          </a>
         </nav>
+
+        <section class="nav-card">
+          <span class="nav-card-label">运行视图</span>
+          <strong>127.0.0.1:8866</strong>
+          <p>当前实例已启用健康检查与统一配置页，适合直接演示运行中的服务状态。</p>
+          <a class="text-link" href="/healthz">打开 healthz</a>
+        </section>
       </aside>
 
-      <main class="shell-main">
-        {% block content %}{% endblock %}
-      </main>
+      <div class="shell-body">
+        <header class="shell-topbar">
+          <div class="topbar-copy">
+            <span class="topbar-label">基金监控工作台</span>
+            <strong>{{ title }}</strong>
+          </div>
+          <div class="topbar-actions">
+            <span class="status-pill"><span class="status-pill-dot"></span>本地运行</span>
+            <a class="ghost-link" href="/settings">查看配置</a>
+          </div>
+        </header>
+
+        <main class="shell-main">
+          {% block content %}{% endblock %}
+        </main>
+      </div>
     </div>
 
     <script src="/assets/app.js"></script>

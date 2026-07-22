@@ -3,9 +3,12 @@
 {% block content %}
 <header class="page-header">
   <div>
-    <p class="eyebrow">fund-monitor</p>
+    <p class="eyebrow">alert timeline</p>
     <h1>告警列表</h1>
-    <p class="summary">查看最近命中的监控规则、处理告警状态，并检查外部通知结果。</p>
+    <p class="summary">这里集中展示规则命中后的处理轨迹，包括触发原因、当前状态与外部通知回执。</p>
+  </div>
+  <div class="page-actions">
+    <a class="button secondary" href="/rules">回到规则管理</a>
   </div>
 </header>
 
@@ -17,11 +20,12 @@
 <section class="message success">{{ notice_message }}</section>
 {% endif %}
 
-<section class="card">
+<section class="card card-spacious">
   <div class="card-header">
     <h2>最近告警</h2>
     <span class="badge">{{ alerts.len() }} 条</span>
   </div>
+  <p class="panel-note">建议先处理状态仍为“新告警”的事件，再回看通知结果是否成功投递。</p>
 
   {% if alerts.len() == 0 %}
   <div class="empty-state">

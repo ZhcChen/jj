@@ -97,6 +97,7 @@ struct FundOption {
 #[template(path = "rules/index.html")]
 struct RulesTemplate {
     title: &'static str,
+    nav_key: &'static str,
     rules: Vec<RuleView>,
     funds: Vec<FundOption>,
     groups: Vec<String>,
@@ -222,6 +223,7 @@ async fn render_rules_page(
 
     let template = RulesTemplate {
         title: "规则管理",
+        nav_key: "rules",
         rules: rules
             .iter()
             .map(|rule| map_rule_view(rule, &fund_labels))

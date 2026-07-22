@@ -49,6 +49,7 @@ struct AlertView {
 #[template(path = "alerts/index.html")]
 struct AlertsTemplate {
     title: &'static str,
+    nav_key: &'static str,
     alerts: Vec<AlertView>,
     has_error: bool,
     error_message: String,
@@ -99,6 +100,7 @@ async fn render_alerts_page(
 
     Ok(render_html(&AlertsTemplate {
         title: "告警列表",
+        nav_key: "alerts",
         alerts: alerts.into_iter().map(map_alert_view).collect(),
         has_error: error_message.is_some(),
         error_message: error_message.unwrap_or_default(),
