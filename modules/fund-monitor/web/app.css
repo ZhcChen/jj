@@ -110,7 +110,6 @@ body::before {
 .card,
 .metric-card,
 .message,
-.nav-card,
 .stack-list-item,
 .subsection {
   border: 1px solid var(--line);
@@ -180,12 +179,6 @@ body::before {
   text-transform: uppercase;
 }
 
-.nav-summary {
-  margin: 14px 0 0;
-  color: var(--text-soft);
-  line-height: 1.7;
-}
-
 .nav-links {
   display: flex;
   flex-direction: column;
@@ -252,14 +245,7 @@ body::before {
   color: var(--accent-strong);
 }
 
-.nav-card {
-  margin-top: auto;
-  padding: 16px;
-  border-radius: 16px;
-  background: var(--bg-panel-muted);
-}
-
-.nav-card-label,
+.topbar-label,
 .topbar-label,
 .eyebrow,
 .detail-label,
@@ -268,28 +254,6 @@ body::before {
   font-family: var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-.nav-card-label {
-  display: inline-block;
-  margin-bottom: 8px;
-  color: var(--text-muted);
-  font-size: 10px;
-}
-
-.nav-card strong {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.nav-card p {
-  margin: 0 0 12px;
-  color: var(--text-soft);
-  line-height: 1.68;
 }
 
 .shell-body {
@@ -302,7 +266,7 @@ body::before {
 .shell-topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
   padding: 12px 18px;
   border-radius: 16px;
@@ -324,12 +288,6 @@ body::before {
   font-weight: 700;
 }
 
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .status-pill,
 .hero-chip,
 .badge,
@@ -345,25 +303,6 @@ body::before {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.status-pill {
-  background: rgba(34, 150, 243, 0.08);
-  border-color: rgba(34, 150, 243, 0.14);
-  color: var(--accent-strong);
-}
-
-.status-pill.muted {
-  background: rgba(122, 138, 164, 0.08);
-  border-color: rgba(122, 138, 164, 0.12);
-  color: var(--text-soft);
-}
-
-.status-pill-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--success);
 }
 
 .ghost-link,
