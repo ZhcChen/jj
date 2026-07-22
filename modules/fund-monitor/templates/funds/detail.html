@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="eyebrow">fund-monitor</p>
+    <h1>基金详情</h1>
+    <p class="summary">更新基金元数据，或将基金从当前监控池中停用。</p>
+  </div>
+  <a class="button secondary" href="/funds">返回列表</a>
+</header>
+
+{% if has_error %}
+<section class="message error">{{ error_message }}</section>
+{% endif %}
+
+<section class="detail-grid">
+  <article class="card">
+    <div class="detail-row">
+      <span class="detail-label">基金代码</span>
+      <code>{{ fund.code }}</code>
+    </div>
+
+    <form class="stack-form" method="post" action="/funds/{{ fund.id }}">
+      <label>
+        <span>基金名称</span>
+        <input type="text" name="name" value="{{ fund.name }}" />
+      </label>
+      <label>
+        <span>分组</span>
+        <input type="text" name="group_name" value="{{ fund.group_name }}" />
+      </label>
+      <label>
+        <span>标签</span>
+        <input type="text" name="tags" value="{{ fund.tags }}" />
+      </label>
+      <label>
+        <span>备注</span>
+        <textarea name="note" rows="5">{{ fund.note }}</textarea>
+      </label>
+
+      <div class="button-row">
+        <button class="button primary" type="submit">保存修改</button>
+      </div>
+    </form>
+  </article>
+
+  <article class="card danger-card">
+    <h2>停用基金</h2>
+    <p>停用后，该基金会从当前基金池列表中移除，不再参与后续监控任务。</p>
+    <form method="post" action="/funds/{{ fund.id }}/disable">
+      <button class="button danger" type="submit">停用该基金</button>
+    </form>
+  </article>
+</section>
+{% endblock %}
+

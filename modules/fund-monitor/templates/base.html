@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }} - 基金监控</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="shell-nav">
+        <a class="brand" href="/">基金监控</a>
+        <nav class="nav-links">
+          <a href="/funds">基金列表</a>
+        </nav>
+      </aside>
+
+      <main class="shell-main">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    <script src="/assets/app.js"></script>
+  </body>
+</html>
+

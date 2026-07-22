@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use sqlx::{
+    SqlitePool,
     migrate::Migrator,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
-    SqlitePool,
 };
 use std::{fs, path::Path, str::FromStr};
 
