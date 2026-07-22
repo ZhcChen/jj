@@ -22,6 +22,9 @@ impl AppConfig {
             "FUND_MONITOR_POLL_INTERVAL_SECONDS",
             DEFAULT_POLL_INTERVAL_SECONDS,
         )?;
+        if poll_interval_seconds == 0 {
+            bail!("FUND_MONITOR_POLL_INTERVAL_SECONDS 必须大于 0");
+        }
 
         Ok(Self {
             bind_addr,

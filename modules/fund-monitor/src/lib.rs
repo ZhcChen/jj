@@ -1,5 +1,6 @@
 pub mod app;
 pub mod domain;
+pub mod jobs;
 pub mod providers;
 pub mod storage;
 pub mod web;

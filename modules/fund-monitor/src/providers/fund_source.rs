@@ -75,7 +75,17 @@ pub async fn fetch_and_store_fund_quote(
     job_repo: &JobRepo,
 ) -> Result<FundQuote, FundIngestError> {
     let job_type = format!("fund_manual_fetch:{}", fund.code);
-    let job = job_repo.start(&job_type).await.map_err(|err| {
+    fetch_and_store_fund_quote_for_job(source, fund, quote_repo, job_repo, &job_type).await
+}
+
+pub async fn fetch_and_store_fund_quote_for_job(
+    source: &EastmoneyFundSource,
+    fund: &Fund,
+    quote_repo: &QuoteRepo,
+    job_repo: &JobRepo,
+    job_type: &str,
+) -> Result<FundQuote, FundIngestError> {
+    let job = job_repo.start(job_type).await.map_err(|err| {
         FundIngestError::storage_failure(format!("创建抓取任务记录失败：{err:#}"))
     })?;
 
