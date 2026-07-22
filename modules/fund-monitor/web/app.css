@@ -432,8 +432,7 @@ h1 {
   overflow: hidden;
   transition:
     border-color 150ms ease,
-    box-shadow 150ms ease,
-    transform 150ms ease;
+    box-shadow 150ms ease;
 }
 
 .card::before,
@@ -454,7 +453,6 @@ h1 {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.84),
     var(--shadow-strong);
-  transform: translateY(-1px);
 }
 
 .card-spacious {
@@ -604,14 +602,9 @@ h1 {
   border: 1px solid transparent;
   font-weight: 600;
   transition:
-    transform 150ms ease,
     box-shadow 150ms ease,
     border-color 150ms ease,
     background-color 150ms ease;
-}
-
-.button:hover {
-  transform: translateY(-1px);
 }
 
 .button.small {
@@ -752,8 +745,7 @@ h1 {
   background: rgba(250, 252, 255, 0.94);
   transition:
     border-color 150ms ease,
-    box-shadow 150ms ease,
-    transform 150ms ease;
+    box-shadow 150ms ease;
 }
 
 .stack-list-main strong {
