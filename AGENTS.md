@@ -1,8 +1,15 @@
 # CE 项目提示词模板
 
-> 说明：这是 **Compound Engineering (CE)** 在 Codex CLI 下的项目级 `AGENTS.md` 模板。
-> 当某个项目希望以 CE 作为主要 AI 工作架构时，将本文件复制到该项目根目录并重命名为 `AGENTS.md`。
-> 如果项目已经有自己的 `AGENTS.md`，请将其中与 CE 相关的规则合并进去，而不是盲目覆盖。
+## 项目定位
+- 本项目用于基金监控。
+- 当前首个业务模块命名为 `fund-monitor`，路径为 `modules/fund-monitor`。
+
+## 技术栈与模块约定
+- 仓库按模块组织，业务模块统一放在 `modules/`。
+- 后端与 Web 应用统一使用 Rust。
+- Rust Web 框架固定为 `axum`。
+- 页面使用原生 `html + css + js`。
+- 页面与静态资源默认按“可打包进 Rust 二进制”设计，静态资源优先使用 `rust-embed`；需要服务端模板时优先 `askama`。
 
 ## 工作模式
 - 本项目默认启用 **Compound Engineering (CE)** 作为主要 AI 工作架构。
@@ -13,33 +20,17 @@
 ## CE 默认工作流
 按任务类型优先采用以下顺序：
 
-1. **需求不清、范围未定、要先讨论方向**
-   - 优先使用 `ce:brainstorm`
-   - 产出写入 `docs/brainstorms/`
-
-2. **需求已清晰，需要技术方案或拆解实施计划**
-   - 优先使用 `ce:plan`
-   - 产出写入 `docs/plans/`
-
-3. **进入执行阶段，需要按计划落地**
-   - 优先使用 `ce:work`
-   - 若明确需要实验性的外部委派模式，可使用 `ce:work-beta`
-
-4. **代码改动完成，需要审查质量、风险与规范**
-   - 优先使用 `ce:review`
-
-5. **问题解决后，需要沉淀经验与复用知识**
-   - 优先使用 `ce:compound`
-   - 历史知识漂移或过期时使用 `ce:compound-refresh`
-   - 产出写入 `docs/solutions/`
+1. 需求不清、范围未定：`ce:brainstorm` -> `docs/brainstorms/`
+2. 需求已清晰、需要计划：`ce:plan` -> `docs/plans/`
+3. 进入执行阶段：`ce:work`；需要实验性外部委派时用 `ce:work-beta`
+4. 代码改动完成后审查：`ce:review`
+5. 问题解决后沉淀：`ce:compound`；历史知识漂移时用 `ce:compound-refresh` -> `docs/solutions/`
 
 ## 产物约定
 - 需求/产品定义：`docs/brainstorms/`
 - 技术计划：`docs/plans/`
 - 解决方案/经验沉淀：`docs/solutions/`
 - CE 运行期中间产物：`.context/compound-engineering/`
-
-除非项目已有明确不同约定，否则遵守以上目录布局。
 
 ## 执行规则
 - 在 CE 工作流中，优先保证：**先澄清，再规划，再执行，再审查，再沉淀**。
@@ -52,11 +43,29 @@
   3. CE 工作流约定
   4. 全局默认行为
 
+## Context7 使用准则
+- 需要官方库或框架资料时，优先使用 Context7，减少依赖不确定来源的信息。
+- 先解析准确的库 ID，再拉取文档；遇到歧义时说明筛选理由。
+- 只拉取满足当前问题的最小上下文；Context7 不足时再考虑其他手段。
+
+## Chrome DevTools MCP 使用准则
+- 需要排查浏览器端行为、排版或网络问题时，优先使用 `chrome-devtools` MCP。
+- 调试前明确目标页面与采集目标；获取结果后整理关键观察并引用输出。
+- 若 MCP 不支持所需操作或报错，记录已尝试的命令与错误信息，再改用其他方式。
+
+## Subagent 默认策略
+- 任务可拆且写入范围可分离时，默认使用 subagent，不必等用户显式要求。
+- 主线程负责拆任务、分配文件 ownership、合并结果、最终验收与 git；子代理负责调查、实现、局部验证。
+- 默认并行：多个独立调查点用多个 explorer，多个独立改动块用多个 worker。
+- 每个 worker 必须有明确写入范围；不得回滚他人改动，遇到冲突优先适配并汇报。
+- 非关键路径任务不要立即等待；只有主线程下一步被阻塞时才 `wait_agent`，完成后及时 `close_agent`。
+- 立即阻塞的小任务、强耦合改动、需要连续交互的操作，优先主线程直接处理。
+- 所有 subagent 结果最终由主线程统一检查 diff、运行相关测试，并决定是否提交。
+
 ## Git 协作简则
 - 任何代码、文档、配置调整，只要已经形成稳定结果，都应及时提交并推送。
-- 小调整、小功能、小 bug 修复，默认直接提交并推送，不额外确认。
-- 大改动按阶段及时提交并推送，保证每次提交都对应明确的调整内容，便于回溯、分析和复盘。
-- 提交尽量保持一事一提交，只包含当前任务相关改动。
+- 默认一事一提交，只包含当前任务相关改动。
+- 小调整默认直接提交并推送；大改动按阶段提交并推送。
 - 提交信息默认采用 Conventional Commits 简化格式：`type(scope): summary`
 - 常用类型：`feat`、`fix`、`docs`、`refactor`、`chore`
 - 推送后只做简要反馈：调整了什么、提交信息、已推送到哪个分支。
@@ -77,7 +86,7 @@ Tool mapping:
 - LS: use ls via shell_command
 - WebFetch/WebSearch: use curl or Context7 for library docs
 - AskUserQuestion/Question: present choices as a numbered list in chat and wait for a reply number. For multi-select (multiSelect: true), accept comma-separated numbers. Never skip or auto-configure — always wait for the user's response before proceeding.
-- Task/Subagent/Parallel: run sequentially in main thread; use multi_tool_use.parallel for tool calls
+- Task/Subagent/Parallel: use Codex subagent/task spawning for splittable work; use multi_tool_use.parallel only for parallel tool calls in the main thread
 - TodoWrite/TodoRead: use file-based todos in todos/ with todo-create skill
 - Skill: open the referenced SKILL.md and follow it
 - ExitPlanMode: ignore
