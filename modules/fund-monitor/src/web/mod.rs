@@ -3,6 +3,7 @@ mod dashboard;
 mod funds;
 mod layout;
 mod routes;
+mod rules;
 mod settings;
 
 use crate::app::state::AppState;

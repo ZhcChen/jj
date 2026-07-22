@@ -59,6 +59,21 @@ impl RuleRepo {
         .context("查询启用规则失败")
     }
 
+    pub async fn list_all(&self) -> Result<Vec<MonitorRule>> {
+        sqlx::query_as::<_, MonitorRule>(
+            r#"
+            SELECT
+                id, fund_id, group_name, rule_type, threshold_config, enabled,
+                cooldown_minutes, last_triggered_at, created_at, updated_at
+            FROM monitor_rules
+            ORDER BY id DESC
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .context("查询规则列表失败")
+    }
+
     pub async fn set_enabled(&self, id: i64, enabled: bool) -> Result<()> {
         let now = OffsetDateTime::now_utc();
 
@@ -114,5 +129,20 @@ impl RuleRepo {
         .fetch_optional(&self.pool)
         .await
         .context("按 ID 查询监控规则失败")
+    }
+
+    pub async fn delete(&self, id: i64) -> Result<()> {
+        sqlx::query(
+            r#"
+            DELETE FROM monitor_rules
+            WHERE id = ?
+            "#,
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await
+        .context("删除监控规则失败")?;
+
+        Ok(())
     }
 }

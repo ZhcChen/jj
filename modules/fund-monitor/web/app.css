@@ -203,7 +203,8 @@ h1 {
 }
 
 .stack-form input,
-.stack-form textarea {
+.stack-form textarea,
+.stack-form select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(146, 164, 192, 0.2);
@@ -215,6 +216,28 @@ h1 {
 
 .stack-form textarea {
   resize: vertical;
+}
+
+.subsection {
+  padding: 16px;
+  border: 1px solid rgba(146, 164, 192, 0.14);
+  border-radius: 16px;
+  background: rgba(9, 14, 28, 0.48);
+}
+
+.subsection h3 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.inline-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inline-field-grid.triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .button-row {
