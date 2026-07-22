@@ -4,3 +4,4 @@ pub mod fund;
 pub mod fund_quote;
 pub mod job_run;
 pub mod monitor_rule;
+pub mod rule_engine;

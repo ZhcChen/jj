@@ -79,6 +79,26 @@ impl RuleRepo {
         Ok(())
     }
 
+    pub async fn mark_triggered(&self, id: i64, triggered_at: OffsetDateTime) -> Result<()> {
+        let now = OffsetDateTime::now_utc();
+
+        sqlx::query(
+            r#"
+            UPDATE monitor_rules
+            SET last_triggered_at = ?, updated_at = ?
+            WHERE id = ?
+            "#,
+        )
+        .bind(triggered_at)
+        .bind(now)
+        .bind(id)
+        .execute(&self.pool)
+        .await
+        .context("更新规则最近触发时间失败")?;
+
+        Ok(())
+    }
+
     pub async fn find_by_id(&self, id: i64) -> Result<Option<MonitorRule>> {
         sqlx::query_as::<_, MonitorRule>(
             r#"

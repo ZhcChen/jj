@@ -1,7 +1,11 @@
 use crate::{
     app::state::AppState,
+    domain::rule_engine::RuleEngine,
     providers::fund_source::fetch_and_store_fund_quote_for_job,
-    storage::{fund_repo::FundRepo, job_repo::JobRepo, quote_repo::QuoteRepo},
+    storage::{
+        alert_repo::AlertRepo, fund_repo::FundRepo, job_repo::JobRepo, quote_repo::QuoteRepo,
+        rule_repo::RuleRepo,
+    },
 };
 use anyhow::{Context, Result};
 
@@ -28,6 +32,8 @@ impl PollFundsJob {
         let fund_repo = FundRepo::new(self.state.pool.clone());
         let quote_repo = QuoteRepo::new(self.state.pool.clone());
         let job_repo = JobRepo::new(self.state.pool.clone());
+        let rule_repo = RuleRepo::new(self.state.pool.clone());
+        let alert_repo = AlertRepo::new(self.state.pool.clone());
 
         let round_job = job_repo
             .start(ROUND_JOB_TYPE)
@@ -67,9 +73,24 @@ impl PollFundsJob {
             return Ok(summary);
         }
 
+        let enabled_rules = match rule_repo.list_enabled().await {
+            Ok(rules) => rules,
+            Err(err) => {
+                finish_round_job(
+                    &job_repo,
+                    round_job.id,
+                    "failed",
+                    Some(format!("加载启用规则失败：{err:#}")),
+                )
+                .await?;
+                return Err(err).context("查询启用规则失败");
+            }
+        };
+
         let mut succeeded_funds = 0usize;
         let mut failed_funds = 0usize;
         let mut failure_messages = Vec::new();
+        let mut had_rule_errors = false;
 
         for fund in funds {
             let job_type = format!("fund_poll_fetch:{}", fund.code);
@@ -82,8 +103,20 @@ impl PollFundsJob {
             )
             .await
             {
-                Ok(_) => {
+                Ok(quote) => {
                     succeeded_funds += 1;
+                    if let Err(err) = evaluate_rules_for_fund(
+                        &fund,
+                        &quote,
+                        &enabled_rules,
+                        &rule_repo,
+                        &alert_repo,
+                    )
+                    .await
+                    {
+                        had_rule_errors = true;
+                        failure_messages.push(format!("{}: {err:#}", fund.code));
+                    }
                 }
                 Err(err) => {
                     failed_funds += 1;
@@ -92,7 +125,7 @@ impl PollFundsJob {
             }
         }
 
-        let summary = build_summary(succeeded_funds, failed_funds);
+        let summary = build_summary(succeeded_funds, failed_funds, had_rule_errors);
         finish_round_job(
             &job_repo,
             round_job.id,
@@ -105,9 +138,13 @@ impl PollFundsJob {
     }
 }
 
-fn build_summary(succeeded_funds: usize, failed_funds: usize) -> PollFundsSummary {
+fn build_summary(
+    succeeded_funds: usize,
+    failed_funds: usize,
+    had_rule_errors: bool,
+) -> PollFundsSummary {
     let total_funds = succeeded_funds + failed_funds;
-    let status = if failed_funds == 0 {
+    let status = if failed_funds == 0 && !had_rule_errors {
         "success"
     } else if succeeded_funds == 0 {
         "failed"
@@ -138,6 +175,47 @@ fn build_summary_message(
         summary.failed_funds,
         failure_messages.join("；")
     ))
+}
+
+async fn evaluate_rules_for_fund(
+    fund: &crate::domain::fund::Fund,
+    quote: &crate::domain::fund_quote::FundQuote,
+    enabled_rules: &[crate::domain::monitor_rule::MonitorRule],
+    rule_repo: &RuleRepo,
+    alert_repo: &AlertRepo,
+) -> Result<()> {
+    for rule in enabled_rules {
+        let last_alert_at = alert_repo
+            .latest_for_rule_and_fund(rule.id, fund.id)
+            .await
+            .with_context(|| {
+                format!(
+                    "查询规则最近告警失败，rule_id={}，fund_id={}",
+                    rule.id, fund.id
+                )
+            })?
+            .map(|alert| alert.triggered_at);
+
+        let Some(trigger) = RuleEngine::evaluate(rule, fund, quote, last_alert_at)
+            .with_context(|| format!("执行规则失败，rule_id={}，fund_id={}", rule.id, fund.id))?
+        else {
+            continue;
+        };
+
+        let triggered_at = trigger.triggered_at;
+        alert_repo
+            .create(trigger.into_new_alert())
+            .await
+            .with_context(|| {
+                format!("写入告警事件失败，rule_id={}，fund_id={}", rule.id, fund.id)
+            })?;
+        rule_repo
+            .mark_triggered(rule.id, triggered_at)
+            .await
+            .with_context(|| format!("更新规则触发时间失败，rule_id={}", rule.id))?;
+    }
+
+    Ok(())
 }
 
 async fn finish_round_job(
