@@ -9,7 +9,7 @@ use crate::{
 use regex::Regex;
 use serde::Deserialize;
 use std::sync::LazyLock;
-use time::OffsetDateTime;
+use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
 
 use super::http_client::HttpClient;
 
@@ -27,16 +27,22 @@ static NET_WORTH_RE: LazyLock<Regex> = LazyLock::new(|| {
 });
 static ESTIMATED_NAV_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"var\s+gsz\s*=\s*"([^"]+)";"#).expect("compile gsz regex"));
-static CHANGE_RATE_RE: LazyLock<Regex> =
+static ESTIMATED_CHANGE_RATE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"var\s+gszzl\s*=\s*"([^"]+)";"#).expect("compile gszzl regex"));
+static ESTIMATED_AT_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"var\s+gztime\s*=\s*"([^"]+)";"#).expect("compile gztime regex"));
 
 #[derive(Debug, Clone)]
 pub struct FetchedFundSnapshot {
-    pub change_rate: Option<f64>,
     pub code: String,
+    pub confirmed_change_rate: Option<f64>,
+    pub change_rate: Option<f64>,
     pub estimated_nav: Option<f64>,
+    pub estimated_change_rate: Option<f64>,
+    pub estimated_at: Option<OffsetDateTime>,
     pub fetched_at: OffsetDateTime,
     pub name: String,
+    pub nav_date: Option<OffsetDateTime>,
     pub source: String,
     pub unit_nav: Option<f64>,
 }
@@ -101,7 +107,11 @@ pub async fn fetch_and_store_fund_quote_for_job(
         .insert(NewFundQuote {
             fund_id: fund.id,
             unit_nav: snapshot.unit_nav,
+            nav_date: snapshot.nav_date,
+            confirmed_change_rate: snapshot.confirmed_change_rate,
             estimated_nav: snapshot.estimated_nav,
+            estimated_change_rate: snapshot.estimated_change_rate,
+            estimated_at: snapshot.estimated_at,
             change_rate: snapshot.change_rate,
             fetched_at: snapshot.fetched_at,
             source: snapshot.source,
@@ -150,16 +160,25 @@ fn parse_pingzhongdata(
         FundIngestError::invalid_source_data("基金数据源未返回任何净值历史".to_owned())
     })?;
 
+    let nav_date = OffsetDateTime::from_unix_timestamp(latest.timestamp_ms / 1_000).ok();
+    let confirmed_change_rate = latest
+        .equity_return
+        .or_else(|| compute_nav_change_rate(&history));
     let estimated_nav = capture_optional_decimal(&ESTIMATED_NAV_RE, normalized);
-    let change_rate =
-        capture_optional_decimal(&CHANGE_RATE_RE, normalized).or(latest.equity_return);
+    let estimated_change_rate = capture_optional_decimal(&ESTIMATED_CHANGE_RATE_RE, normalized);
+    let estimated_at = capture_optional_local_datetime(&ESTIMATED_AT_RE, normalized);
+    let change_rate = estimated_change_rate.or(confirmed_change_rate);
 
     Ok(FetchedFundSnapshot {
-        change_rate,
         code,
+        confirmed_change_rate,
+        change_rate,
         estimated_nav,
+        estimated_change_rate,
+        estimated_at,
         fetched_at,
         name,
+        nav_date,
         source: SOURCE_NAME.to_owned(),
         unit_nav: Some(latest.y),
     })
@@ -204,11 +223,64 @@ fn capture_optional_decimal(regex: &Regex, body: &str) -> Option<f64> {
         .and_then(|value| value.as_str().trim().parse::<f64>().ok())
 }
 
+fn capture_optional_local_datetime(regex: &Regex, body: &str) -> Option<OffsetDateTime> {
+    regex
+        .captures(body)
+        .and_then(|captures| captures.get(1))
+        .and_then(|value| parse_eastmoney_local_datetime(value.as_str().trim()))
+}
+
+fn parse_eastmoney_local_datetime(value: &str) -> Option<OffsetDateTime> {
+    let (date_part, time_part) = value.split_once(' ')?;
+    let mut date_parts = date_part.split('-');
+    let year = date_parts.next()?.parse::<i32>().ok()?;
+    let month = date_parts.next()?.parse::<u8>().ok()?;
+    let day = date_parts.next()?.parse::<u8>().ok()?;
+    if date_parts.next().is_some() {
+        return None;
+    }
+
+    let mut time_parts = time_part.split(':');
+    let hour = time_parts.next()?.parse::<u8>().ok()?;
+    let minute = time_parts.next()?.parse::<u8>().ok()?;
+    let second = time_parts
+        .next()
+        .and_then(|value| value.parse::<u8>().ok())
+        .unwrap_or(0);
+    if time_parts.next().is_some() {
+        return None;
+    }
+
+    let date = Date::from_calendar_date(year, Month::try_from(month).ok()?, day).ok()?;
+    let time = Time::from_hms(hour, minute, second).ok()?;
+    let offset = UtcOffset::from_hms(8, 0, 0).ok()?;
+
+    Some(
+        PrimitiveDateTime::new(date, time)
+            .assume_offset(offset)
+            .to_offset(UtcOffset::UTC),
+    )
+}
+
+fn compute_nav_change_rate(history: &[NetWorthPoint]) -> Option<f64> {
+    if history.len() < 2 {
+        return None;
+    }
+
+    let previous = history.get(history.len().checked_sub(2)?)?;
+    if previous.y == 0.0 {
+        return None;
+    }
+
+    let latest = history.last()?;
+    Some(((latest.y - previous.y) / previous.y) * 100.0)
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct NetWorthPoint {
     #[serde(rename = "equityReturn")]
     equity_return: Option<f64>,
     #[serde(rename = "x")]
-    _timestamp_ms: i64,
+    timestamp_ms: i64,
     y: f64,
 }

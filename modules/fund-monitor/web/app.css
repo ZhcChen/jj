@@ -717,6 +717,44 @@ h1 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.detail-panel-block + .detail-panel-block {
+  margin-top: 4px;
+}
+
+.detail-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.detail-panel-head h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.detail-panel-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid rgba(110, 132, 170, 0.16);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-panel-tag.active {
+  border-color: rgba(34, 150, 243, 0.16);
+  background: rgba(34, 150, 243, 0.08);
+  color: var(--accent-strong);
+}
+
 .metric {
   padding: 14px;
   border: 1px solid var(--line);
@@ -731,6 +769,7 @@ h1 {
   font-family: var(--mono);
   font-size: 22px;
   line-height: 1.2;
+  word-break: break-word;
 }
 
 .detail-meta-strip {
@@ -754,6 +793,10 @@ h1 {
   font-family: var(--mono);
   font-size: 14px;
   line-height: 1.5;
+}
+
+.detail-snapshot-note {
+  margin-bottom: 0;
 }
 
 .detail-row-leading {

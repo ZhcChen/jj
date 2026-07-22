@@ -45,7 +45,11 @@ async fn repositories_support_core_create_query_and_status_transitions() {
         .insert(NewFundQuote {
             fund_id: fund.id,
             unit_nav: Some(1.2345),
+            nav_date: None,
+            confirmed_change_rate: Some(0.87),
             estimated_nav: Some(1.2401),
+            estimated_change_rate: Some(0.87),
+            estimated_at: None,
             change_rate: Some(0.87),
             fetched_at: OffsetDateTime::now_utc(),
             source: "mock-source".to_owned(),

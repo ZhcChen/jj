@@ -17,7 +17,7 @@ use axum::{
 };
 use serde::Deserialize;
 
-use super::layout::{display_datetime, render_html};
+use super::layout::{display_date, display_datetime, render_html};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -75,9 +75,13 @@ struct FundDetailView {
 #[derive(Debug, Clone, Default)]
 struct FundQuoteView {
     unit_nav: String,
+    nav_date: String,
+    confirmed_change_rate: String,
     estimated_nav: String,
-    change_rate: String,
+    estimated_change_rate: String,
+    estimated_at: String,
     fetched_at: String,
+    has_estimate_snapshot: bool,
     source: String,
 }
 
@@ -328,11 +332,19 @@ fn map_fund_detail(fund: Fund) -> FundDetailView {
 }
 
 fn map_quote_view(quote: FundQuote) -> FundQuoteView {
+    let has_estimate_snapshot = quote.estimated_nav.is_some()
+        || quote.estimated_change_rate.is_some()
+        || quote.estimated_at.is_some();
+
     FundQuoteView {
         unit_nav: format_optional_decimal(quote.unit_nav, 4, ""),
+        nav_date: format_optional_datetime(quote.nav_date, display_date),
+        confirmed_change_rate: format_optional_decimal(quote.confirmed_change_rate, 2, "%"),
         estimated_nav: format_optional_decimal(quote.estimated_nav, 4, ""),
-        change_rate: format_optional_decimal(quote.change_rate, 2, "%"),
+        estimated_change_rate: format_optional_decimal(quote.estimated_change_rate, 2, "%"),
+        estimated_at: format_optional_datetime(quote.estimated_at, display_datetime),
         fetched_at: display_datetime(quote.fetched_at),
+        has_estimate_snapshot,
         source: quote.source,
     }
 }
@@ -409,4 +421,11 @@ fn format_optional_decimal(value: Option<f64>, precision: usize, suffix: &str) -
         Some(value) => format!("{value:.precision$}{suffix}"),
         None => "-".to_owned(),
     }
+}
+
+fn format_optional_datetime(
+    value: Option<time::OffsetDateTime>,
+    formatter: fn(time::OffsetDateTime) -> String,
+) -> String {
+    value.map(formatter).unwrap_or_else(|| "-".to_owned())
 }

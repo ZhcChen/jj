@@ -136,7 +136,11 @@ async fn seed_state(state: &fund_monitor::app::state::AppState, with_quote_histo
             .insert(NewFundQuote {
                 fund_id: fund.id,
                 unit_nav: Some(1.1000),
+                nav_date: None,
+                confirmed_change_rate: Some(0.80),
                 estimated_nav: Some(1.1200),
+                estimated_change_rate: Some(0.80),
+                estimated_at: None,
                 change_rate: Some(0.80),
                 fetched_at: now - Duration::hours(2),
                 source: "mock-source".to_owned(),
@@ -147,7 +151,11 @@ async fn seed_state(state: &fund_monitor::app::state::AppState, with_quote_histo
             .insert(NewFundQuote {
                 fund_id: fund.id,
                 unit_nav: Some(1.3000),
+                nav_date: None,
+                confirmed_change_rate: Some(1.20),
                 estimated_nav: Some(1.3100),
+                estimated_change_rate: Some(1.20),
+                estimated_at: None,
                 change_rate: Some(1.20),
                 fetched_at: now - Duration::hours(1),
                 source: "mock-source".to_owned(),

@@ -28,7 +28,11 @@ async fn valid_provider_response_writes_quote_and_success_job() {
     let fetch_finished_at = OffsetDateTime::now_utc();
 
     assert_eq!(quote.unit_nav, Some(1.2401));
+    assert!(quote.nav_date.is_some());
+    assert_eq!(quote.confirmed_change_rate, Some(0.45));
     assert_eq!(quote.estimated_nav, None);
+    assert_eq!(quote.estimated_change_rate, None);
+    assert_eq!(quote.estimated_at, None);
     assert_eq!(quote.change_rate, Some(0.45));
     assert_eq!(quote.source, "eastmoney/pingzhongdata");
     assert!(quote.fetched_at >= fetch_started_at);
@@ -40,6 +44,9 @@ async fn valid_provider_response_writes_quote_and_success_job() {
         .expect("latest quote")
         .expect("quote exists");
     assert_eq!(latest.id, quote.id);
+    assert_eq!(latest.nav_date, quote.nav_date);
+    assert_eq!(latest.confirmed_change_rate, quote.confirmed_change_rate);
+    assert_eq!(latest.estimated_change_rate, quote.estimated_change_rate);
     assert_eq!(latest.fetched_at, quote.fetched_at);
 
     let jobs = job_repo.list_recent(5).await.expect("job list");
@@ -144,6 +151,7 @@ async fn latest_quote_returns_newest_after_two_fetches() {
         .expect("latest quote")
         .expect("quote exists");
     assert_eq!(latest.unit_nav, Some(1.2600));
+    assert_eq!(latest.confirmed_change_rate, Some(1.30));
     assert_eq!(latest.change_rate, Some(1.30));
 
     let history = quote_repo
@@ -153,6 +161,28 @@ async fn latest_quote_returns_newest_after_two_fetches() {
     assert_eq!(history.len(), 2);
     assert_eq!(history[0].unit_nav, Some(1.2600));
     assert_eq!(history[1].unit_nav, Some(1.2100));
+}
+
+#[tokio::test]
+async fn estimated_snapshot_fields_are_kept_separate_from_confirmed_nav() {
+    let server = spawn_fixture_server(estimated_fixture()).await;
+    let state = test_state_with_base_url(&server.base_url).await;
+
+    let fund = create_fund(&state.pool, "000001", "示例基金").await;
+    let quote_repo = QuoteRepo::new(state.pool.clone());
+    let job_repo = JobRepo::new(state.pool.clone());
+
+    let quote =
+        fetch_and_store_fund_quote(state.fund_source.as_ref(), &fund, &quote_repo, &job_repo)
+            .await
+            .expect("ingest estimated snapshot");
+
+    assert_eq!(quote.unit_nav, Some(1.2401));
+    assert_eq!(quote.confirmed_change_rate, Some(0.45));
+    assert_eq!(quote.estimated_nav, Some(1.2523));
+    assert_eq!(quote.estimated_change_rate, Some(1.13));
+    assert_eq!(quote.change_rate, Some(1.13));
+    assert!(quote.estimated_at.is_some());
 }
 
 async fn create_fund(
@@ -251,4 +281,8 @@ fn valid_fixture(code: &str, name: &str, unit_nav: f64, change_rate: f64) -> Str
     format!(
         r#"var fS_name = "{name}";var fS_code = "{code}";var Data_netWorthTrend = [{{"x":1721606400000,"y":1.1111,"equityReturn":0.11}},{{"x":1721692800000,"y":{unit_nav},"equityReturn":{change_rate}}}];"#
     )
+}
+
+fn estimated_fixture() -> String {
+    r#"var fS_name = "示例基金";var fS_code = "000001";var gsz = "1.2523";var gszzl = "1.13";var gztime = "2026-07-22 14:36";var Data_netWorthTrend = [{"x":1721606400000,"y":1.1111,"equityReturn":0.11},{"x":1721692800000,"y":1.2401,"equityReturn":0.45}];"#.to_owned()
 }

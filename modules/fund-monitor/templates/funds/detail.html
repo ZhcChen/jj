@@ -31,7 +31,7 @@
   <div class="detail-main-stack">
     <article class="card detail-snapshot-card">
       <div class="card-header">
-        <h2>最近一次抓取</h2>
+        <h2>行情快照</h2>
         {% if has_latest_quote %}
         <span class="badge">已入库</span>
         {% else %}
@@ -40,19 +40,53 @@
       </div>
 
       {% if has_latest_quote %}
-      <div class="metric-grid detail-metric-grid">
-        <div class="metric">
-          <span class="detail-label">单位净值</span>
-          <strong>{{ latest_quote.unit_nav }}</strong>
+      <div class="detail-panel-block">
+        <div class="detail-panel-head">
+          <h3>确认净值口径</h3>
+          <span class="detail-panel-tag">官方净值</span>
         </div>
-        <div class="metric">
-          <span class="detail-label">估值</span>
-          <strong>{{ latest_quote.estimated_nav }}</strong>
+        <div class="metric-grid detail-metric-grid">
+          <div class="metric">
+            <span class="detail-label">净值日期</span>
+            <strong>{{ latest_quote.nav_date }}</strong>
+          </div>
+          <div class="metric">
+            <span class="detail-label">确认净值</span>
+            <strong>{{ latest_quote.unit_nav }}</strong>
+          </div>
+          <div class="metric">
+            <span class="detail-label">净值日涨跌幅</span>
+            <strong>{{ latest_quote.confirmed_change_rate }}</strong>
+          </div>
         </div>
-        <div class="metric">
-          <span class="detail-label">涨跌幅</span>
-          <strong>{{ latest_quote.change_rate }}</strong>
+      </div>
+      <div class="detail-panel-block">
+        <div class="detail-panel-head">
+          <h3>盘中估值口径</h3>
+          {% if latest_quote.has_estimate_snapshot %}
+          <span class="detail-panel-tag active">实时估算</span>
+          {% else %}
+          <span class="detail-panel-tag">暂不可用</span>
+          {% endif %}
         </div>
+        <div class="metric-grid detail-metric-grid">
+          <div class="metric">
+            <span class="detail-label">估值</span>
+            <strong>{{ latest_quote.estimated_nav }}</strong>
+          </div>
+          <div class="metric">
+            <span class="detail-label">估算涨跌幅</span>
+            <strong>{{ latest_quote.estimated_change_rate }}</strong>
+          </div>
+          <div class="metric">
+            <span class="detail-label">估值时间</span>
+            <strong>{{ latest_quote.estimated_at }}</strong>
+          </div>
+        </div>
+        {% if latest_quote.has_estimate_snapshot %}
+        {% else %}
+        <p class="panel-note detail-snapshot-note">当前数据源未返回盘中估值字段，因此本次仅展示确认净值口径。</p>
+        {% endif %}
       </div>
       <div class="detail-meta-strip">
         <div class="detail-meta-item">
@@ -88,9 +122,11 @@
           <thead>
             <tr>
               <th>抓取时间</th>
-              <th>单位净值</th>
+              <th>净值日</th>
+              <th>确认净值</th>
+              <th>确认涨跌</th>
               <th>估值</th>
-              <th>涨跌幅</th>
+              <th>估算涨跌</th>
               <th>来源</th>
             </tr>
           </thead>
@@ -98,9 +134,11 @@
             {% for quote in quote_history %}
             <tr>
               <td>{{ quote.fetched_at }}</td>
+              <td>{{ quote.nav_date }}</td>
               <td>{{ quote.unit_nav }}</td>
+              <td>{{ quote.confirmed_change_rate }}</td>
               <td>{{ quote.estimated_nav }}</td>
-              <td>{{ quote.change_rate }}</td>
+              <td>{{ quote.estimated_change_rate }}</td>
               <td>{{ quote.source }}</td>
             </tr>
             {% endfor %}

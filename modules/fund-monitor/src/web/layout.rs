@@ -23,3 +23,15 @@ pub fn display_datetime(value: OffsetDateTime) -> String {
         local.second()
     )
 }
+
+pub fn display_date(value: OffsetDateTime) -> String {
+    let offset = UtcOffset::from_hms(8, 0, 0).expect("valid Asia/Shanghai UTC offset");
+    let local = value.to_offset(offset);
+
+    format!(
+        "{:04}-{:02}-{:02}",
+        local.year(),
+        local.month() as u8,
+        local.day()
+    )
+}
