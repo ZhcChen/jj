@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-<header class="page-header">
-  <div>
-    <h1>{{ fund.name }}</h1>
-  </div>
-</header>
-
 {% if has_error %}
 <section class="message error">{{ error_message }}</section>
 {% endif %}
