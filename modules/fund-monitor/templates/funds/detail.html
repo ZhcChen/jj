@@ -3,28 +3,12 @@
 {% block content %}
 <header class="page-header">
   <div>
-    <p class="eyebrow">fund detail</p>
     <h1>{{ fund.name }}</h1>
-    <p class="summary">基金代码 {{ fund.code }}。在这里处理单基金抓取、元数据维护与最近历史回看。</p>
-    <div class="hero-inline-meta">
-      <span class="hero-chip">代码 {{ fund.code }}</span>
-      <span class="hero-chip">本地监控对象</span>
-    </div>
-  </div>
-  <div class="page-actions">
-    <form class="inline-form" method="post" action="/funds/{{ fund.id }}/fetch">
-      <button class="button primary" type="submit">立即抓取</button>
-    </form>
-    <a class="button secondary" href="/funds">返回列表</a>
   </div>
 </header>
 
 {% if has_error %}
 <section class="message error">{{ error_message }}</section>
-{% endif %}
-
-{% if has_notice %}
-<section class="message success">{{ notice_message }}</section>
 {% endif %}
 
 <section class="detail-grid">
@@ -101,52 +85,9 @@
       {% else %}
       <div class="empty-state">
         <p>当前还没有任何抓取记录。</p>
-        <p>点击“立即抓取”后，会将最新基金行情写入历史数据表。</p>
       </div>
       {% endif %}
     </article>
-
-    <section class="card card-spacious detail-history-card">
-      <div class="card-header">
-        <h2>最近抓取历史</h2>
-        <span class="badge">{{ quote_history.len() }} 条</span>
-      </div>
-
-      {% if quote_history.len() == 0 %}
-      <div class="empty-state">
-        <p>还没有历史抓取记录。</p>
-      </div>
-      {% else %}
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>抓取时间</th>
-              <th>净值日</th>
-              <th>确认净值</th>
-              <th>确认涨跌</th>
-              <th>估值</th>
-              <th>估算涨跌</th>
-              <th>来源</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for quote in quote_history %}
-            <tr>
-              <td>{{ quote.fetched_at }}</td>
-              <td>{{ quote.nav_date }}</td>
-              <td>{{ quote.unit_nav }}</td>
-              <td>{{ quote.confirmed_change_rate }}</td>
-              <td>{{ quote.estimated_nav }}</td>
-              <td>{{ quote.estimated_change_rate }}</td>
-              <td>{{ quote.source }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% endif %}
-    </section>
   </div>
 
   <div class="detail-side-stack">
@@ -184,14 +125,6 @@
         <div class="button-row">
           <button class="button primary" type="submit">保存修改</button>
         </div>
-      </form>
-    </article>
-
-    <article class="card danger-card detail-danger-card">
-      <h2>停用基金</h2>
-      <p>停用后，该基金会从当前基金池列表中移除，不再参与后续轮询、规则判断与告警通知。</p>
-      <form method="post" action="/funds/{{ fund.id }}/disable">
-        <button class="button danger" type="submit">停用该基金</button>
       </form>
     </article>
   </div>

@@ -10,7 +10,7 @@ use crate::{
 use askama::Template;
 use axum::{
     Form, Router,
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
     routing::{get, post},
@@ -44,12 +44,6 @@ pub struct FundMetadataFormInput {
     pub note: String,
     pub group_name: String,
     pub tags: String,
-}
-
-#[derive(Debug, Clone, Default, Deserialize)]
-#[serde(default)]
-pub struct FundDetailQuery {
-    pub fetched: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -104,11 +98,8 @@ struct FundDetailTemplate {
     fund: FundDetailView,
     has_error: bool,
     error_message: String,
-    has_notice: bool,
-    notice_message: String,
     has_latest_quote: bool,
     latest_quote: FundQuoteView,
-    quote_history: Vec<FundQuoteView>,
 }
 
 pub async fn list_funds(State(state): State<AppState>) -> Result<impl IntoResponse, StatusCode> {
@@ -198,7 +189,6 @@ pub async fn create_fund(
 pub async fn show_fund(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-    Query(query): Query<FundDetailQuery>,
 ) -> Result<Response, StatusCode> {
     let repo = FundRepo::new(state.pool.clone());
     let fund = repo
@@ -207,16 +197,7 @@ pub async fn show_fund(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    render_fund_detail_response(
-        &state,
-        fund,
-        StatusCode::OK,
-        None,
-        query
-            .fetched
-            .map(|_| "已完成最近一次基金数据抓取".to_owned()),
-    )
-    .await
+    render_fund_detail_response(&state, fund, StatusCode::OK, None).await
 }
 
 pub async fn update_fund(
@@ -251,7 +232,6 @@ pub async fn update_fund(
             fund,
             StatusCode::BAD_REQUEST,
             Some("基金名称不能为空".to_owned()),
-            None,
         )
         .await;
     }
@@ -386,14 +366,8 @@ async fn render_fetch_error(
     fund: Fund,
     err: FundIngestError,
 ) -> Result<Response, StatusCode> {
-    render_fund_detail_response(
-        state,
-        fund,
-        err.status_code(),
-        Some(err.user_message().to_owned()),
-        None,
-    )
-    .await
+    render_fund_detail_response(state, fund, err.status_code(), Some(err.user_message().to_owned()))
+        .await
 }
 
 async fn render_fund_detail_response(
@@ -401,9 +375,8 @@ async fn render_fund_detail_response(
     fund: Fund,
     status: StatusCode,
     error_message: Option<String>,
-    notice_message: Option<String>,
 ) -> Result<Response, StatusCode> {
-    let template = build_fund_detail_template(state, fund, error_message, notice_message).await?;
+    let template = build_fund_detail_template(state, fund, error_message).await?;
     Ok((status, render_html(&template)?).into_response())
 }
 
@@ -411,19 +384,14 @@ async fn build_fund_detail_template(
     state: &AppState,
     fund: Fund,
     error_message: Option<String>,
-    notice_message: Option<String>,
 ) -> Result<FundDetailTemplate, StatusCode> {
     let quote_repo = QuoteRepo::new(state.pool.clone());
-    let quote_history = quote_repo
-        .list_recent_for_fund(fund.id, 10)
+    let latest_quote = quote_repo
+        .list_recent_for_fund(fund.id, 1)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let latest_quote = quote_history.first().cloned();
-    let quote_history = quote_history
-        .into_iter()
-        .map(map_quote_view)
-        .collect::<Vec<_>>();
+    let latest_quote = latest_quote.into_iter().next();
 
     Ok(FundDetailTemplate {
         title: "基金详情",
@@ -431,11 +399,8 @@ async fn build_fund_detail_template(
         fund: map_fund_detail(fund),
         has_error: error_message.is_some(),
         error_message: error_message.unwrap_or_default(),
-        has_notice: notice_message.is_some(),
-        notice_message: notice_message.unwrap_or_default(),
         has_latest_quote: latest_quote.is_some(),
         latest_quote: latest_quote.map(map_quote_view).unwrap_or_default(),
-        quote_history,
     })
 }
 

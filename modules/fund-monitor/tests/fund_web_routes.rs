@@ -227,7 +227,6 @@ async fn manual_fetch_route_shows_latest_quote_in_detail_page() {
     );
 
     let detail_html = get_html(&app, "/funds/1?fetched=1").await;
-    assert!(detail_html.contains("已完成最近一次基金数据抓取"));
     assert!(detail_html.contains("1.2345"));
     assert!(detail_html.contains("0.88%"));
     assert!(detail_html.contains("东方财富净值快照"));

@@ -32,16 +32,15 @@ async fn dashboard_page_shows_overview_and_latest_alert_summary() {
 }
 
 #[tokio::test]
-async fn fund_detail_page_shows_history_descending_and_empty_state() {
+async fn fund_detail_page_shows_latest_snapshot_and_empty_state() {
     let app_with_history = seeded_app(true).await;
     let seeded_html = get_html(&app_with_history, "/funds/1").await;
-    let latest_pos = seeded_html.find("1.3000").expect("latest nav");
-    let older_pos = seeded_html.find("1.1000").expect("older nav");
-    assert!(latest_pos < older_pos);
+    assert!(seeded_html.contains("1.3000"));
+    assert!(!seeded_html.contains("1.1000"));
 
     let empty_app = seeded_app(false).await;
     let empty_html = get_html(&empty_app, "/funds/1").await;
-    assert!(empty_html.contains("还没有历史抓取记录"));
+    assert!(empty_html.contains("当前还没有任何抓取记录"));
 }
 
 #[tokio::test]
