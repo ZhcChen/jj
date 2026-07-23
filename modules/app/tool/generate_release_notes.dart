@@ -94,12 +94,13 @@ Future<void> main(List<String> args) async {
 
 const _platformOrder = ['macOS', 'Windows', 'Linux'];
 const _archOrder = ['arm64', 'x64'];
-const _formatOrder = ['dmg', 'exe', 'deb', 'appimage', 'zip'];
+const _formatOrder = ['dmg', 'exe', 'deb', 'appimage', 'tar.gz', 'zip'];
 const _formatLabels = {
   'appimage': 'AppImage',
   'deb': 'DEB',
   'dmg': 'DMG',
   'exe': 'EXE',
+  'tar.gz': 'TAR.GZ',
   'zip': 'ZIP',
 };
 
@@ -192,6 +193,10 @@ String? _detectFormat(String fileName) {
 
   if (fileName.endsWith('.exe')) {
     return 'exe';
+  }
+
+  if (fileName.endsWith('.tar.gz')) {
+    return 'tar.gz';
   }
 
   if (fileName.endsWith('.zip')) {

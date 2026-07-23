@@ -100,16 +100,31 @@
 4. 工作流自动：
    - 校验 tag 与 `pubspec.yaml` 版本一致
    - 在 Windows / macOS / Linux 构建 release
-   - 将可下载内容整理为 zip 资产
+   - 将可下载内容整理为对应平台分发资产
    - 创建或更新 GitHub Release
 
 当前发布资产命名规则：
 
-- `fund-monitor-app-<version>-<platform>-<arch>.zip`
+- `fund-monitor-app-<version>-<platform>-<arch>.<ext>`
 - 例如：
   - `fund-monitor-app-0.1.0-macos-arm64.zip`
+  - `fund-monitor-app-0.1.0-macos-arm64.dmg`
   - `fund-monitor-app-0.1.0-windows-x64.zip`
   - `fund-monitor-app-0.1.0-linux-x64.zip`
+  - `fund-monitor-app-0.1.0-linux-x64.tar.gz`
+  - `fund-monitor-app-0.1.0-linux-x64.deb`
+
+当前发布格式规划：
+
+- macOS：
+  - `fund-monitor-app-<version>-macos-<arch>.zip`
+  - `fund-monitor-app-<version>-macos-<arch>.dmg`
+- Windows：
+  - `fund-monitor-app-<version>-windows-<arch>.zip`
+- Linux：
+  - `fund-monitor-app-<version>-linux-<arch>.zip`
+  - `fund-monitor-app-<version>-linux-<arch>.tar.gz`
+  - `fund-monitor-app-<version>-linux-<arch>.deb`
 
 ## 6. 目录建议
 

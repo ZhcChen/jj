@@ -109,7 +109,7 @@ jobs:
         working-directory: modules/app
         run: flutter build ${{ matrix.platform.target }} --release
 
-      - name: Package Linux release asset
+      - name: Package Linux ZIP release asset
         if: matrix.platform.target == 'linux'
         run: |
           VERSION="${GITHUB_REF_NAME#app-v}"
@@ -119,7 +119,67 @@ jobs:
           cd modules/app/build/linux/x64/release/bundle
           zip -r "${GITHUB_WORKSPACE}/.artifacts/release-assets/${FILE_NAME}" .
 
-      - name: Package macOS release asset
+      - name: Package Linux TAR.GZ release asset
+        if: matrix.platform.target == 'linux'
+        run: |
+          VERSION="${GITHUB_REF_NAME#app-v}"
+          ARCH="$(uname -m)"
+          FILE_NAME="$(dart modules/app/tool/release_asset_name.dart "${VERSION}" "${{ matrix.platform.slug }}" "${ARCH}" tar.gz)"
+          STAGE_ROOT="${GITHUB_WORKSPACE}/.artifacts/linux-tar-stage/fund-monitor-app"
+          rm -rf "${GITHUB_WORKSPACE}/.artifacts/linux-tar-stage"
+          mkdir -p "${STAGE_ROOT}"
+          cp -R modules/app/build/linux/x64/release/bundle/. "${STAGE_ROOT}/"
+          tar -C "${GITHUB_WORKSPACE}/.artifacts/linux-tar-stage" -czf \
+            "${GITHUB_WORKSPACE}/.artifacts/release-assets/${FILE_NAME}" \
+            "fund-monitor-app"
+
+      - name: Package Linux DEB release asset
+        if: matrix.platform.target == 'linux'
+        run: |
+          VERSION="${GITHUB_REF_NAME#app-v}"
+          DEB_VERSION="${VERSION/-/~}"
+          ARCH="$(uname -m)"
+          FILE_NAME="$(dart modules/app/tool/release_asset_name.dart "${VERSION}" "${{ matrix.platform.slug }}" "${ARCH}" deb)"
+          PACKAGE_ARCH="$(dart modules/app/tool/release_deb_arch.dart "${ARCH}")"
+          DEB_ROOT="${GITHUB_WORKSPACE}/.artifacts/linux-deb-root"
+          rm -rf "${DEB_ROOT}"
+          mkdir -p \
+            "${DEB_ROOT}/DEBIAN" \
+            "${DEB_ROOT}/opt/fund-monitor-app" \
+            "${DEB_ROOT}/usr/bin" \
+            "${DEB_ROOT}/usr/share/applications" \
+            "${DEB_ROOT}/usr/share/icons/hicolor/256x256/apps"
+          cp -R modules/app/build/linux/x64/release/bundle/. "${DEB_ROOT}/opt/fund-monitor-app/"
+          cp modules/app/brand/logo/fund-monitor-mark.png \
+            "${DEB_ROOT}/usr/share/icons/hicolor/256x256/apps/fund-monitor-app.png"
+          cat > "${DEB_ROOT}/DEBIAN/control" <<EOF
+          Package: fund-monitor-app
+          Version: ${DEB_VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: ${PACKAGE_ARCH}
+          Maintainer: Fund Monitor Team <noreply@github.com>
+          Description: Fund monitor desktop app built with Flutter.
+          EOF
+          cat > "${DEB_ROOT}/usr/bin/fund-monitor-app" <<'EOF'
+          #!/usr/bin/env sh
+          exec /opt/fund-monitor-app/fund_monitor_app "$@"
+          EOF
+          chmod 0755 "${DEB_ROOT}/usr/bin/fund-monitor-app"
+          cat > "${DEB_ROOT}/usr/share/applications/fund-monitor-app.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Fund Monitor App
+          Comment=Professional fund monitor desktop terminal
+          Exec=/opt/fund-monitor-app/fund_monitor_app
+          Icon=fund-monitor-app
+          Terminal=false
+          Categories=Office;Finance;
+          EOF
+          dpkg-deb --build --root-owner-group "${DEB_ROOT}" \
+            "${GITHUB_WORKSPACE}/.artifacts/release-assets/${FILE_NAME}"
+
+      - name: Package macOS ZIP release asset
         if: matrix.platform.target == 'macos'
         run: |
           VERSION="${GITHUB_REF_NAME#app-v}"
@@ -130,7 +190,24 @@ jobs:
             modules/app/build/macos/Build/Products/Release/fund_monitor_app.app \
             ".artifacts/release-assets/${FILE_NAME}"
 
-      - name: Package Windows release asset
+      - name: Package macOS DMG release asset
+        if: matrix.platform.target == 'macos'
+        run: |
+          VERSION="${GITHUB_REF_NAME#app-v}"
+          ARCH="$(uname -m)"
+          FILE_NAME="$(dart modules/app/tool/release_asset_name.dart "${VERSION}" "${{ matrix.platform.slug }}" "${ARCH}" dmg)"
+          STAGE_ROOT="${GITHUB_WORKSPACE}/.artifacts/macos-dmg-stage"
+          APP_STAGE="${STAGE_ROOT}/Fund Monitor App"
+          rm -rf "${STAGE_ROOT}"
+          mkdir -p "${APP_STAGE}"
+          cp -R modules/app/build/macos/Build/Products/Release/fund_monitor_app.app "${APP_STAGE}/"
+          ln -s /Applications "${APP_STAGE}/Applications"
+          hdiutil create -volname "Fund Monitor App" \
+            -srcfolder "${APP_STAGE}" \
+            -ov -format UDZO \
+            "${GITHUB_WORKSPACE}/.artifacts/release-assets/${FILE_NAME}"
+
+      - name: Package Windows ZIP release asset
         if: matrix.platform.target == 'windows'
         shell: pwsh
         run: |

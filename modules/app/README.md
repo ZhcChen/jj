@@ -51,14 +51,14 @@ flutter create --platforms=android,ios .
 4. GitHub Actions 工作流 `release-app.yml` 会自动：
    - 校验 tag 与 `pubspec.yaml` 版本一致
    - 在 Windows / macOS / Linux 构建桌面产物
-   - 将各平台产物整理成 zip 下载包
+   - 将各平台产物整理成对应分发格式下载包
    - 创建或更新对应的 GitHub Release
    - 生成按平台/架构分组的 release notes 与变更对比链接
 
 当前发布产物命名统一为：
 
 ```text
-fund-monitor-app-<version>-<platform>-<arch>.zip
+fund-monitor-app-<version>-<platform>-<arch>.<ext>
 ```
 
 命名由 `modules/app/tool/release_asset_name.dart` 统一生成。
@@ -66,8 +66,17 @@ fund-monitor-app-<version>-<platform>-<arch>.zip
 示例：
 
 - `fund-monitor-app-0.1.0-macos-arm64.zip`
+- `fund-monitor-app-0.1.0-macos-arm64.dmg`
 - `fund-monitor-app-0.1.0-windows-x64.zip`
 - `fund-monitor-app-0.1.0-linux-x64.zip`
+- `fund-monitor-app-0.1.0-linux-x64.tar.gz`
+- `fund-monitor-app-0.1.0-linux-x64.deb`
+
+当前各平台发布格式：
+
+- macOS：`zip`、`dmg`
+- Windows：`zip`
+- Linux：`zip`、`tar.gz`、`deb`
 
 如果已有 release 的说明需要重建，可使用：
 
