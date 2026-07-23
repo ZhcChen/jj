@@ -134,68 +134,134 @@ class _HeaderBar extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                SizedBox(
-                  width: 52,
-                  height: 52,
-                  child: Image.asset(
-                    _brandMarkAsset,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('基金监控桌面端', style: theme.textTheme.titleLarge),
-                      const SizedBox(height: 3),
-                      Text(
-                        '专业基金监控终端 · Flutter 桌面版',
-                        style: theme.textTheme.bodySmall,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWideLayout = constraints.maxWidth >= 1280;
+
+            if (isWideLayout) {
+              return SizedBox(
+                height: 88,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _HeaderBrand(theme: theme),
+                    ),
+                    Align(
+                      alignment: Alignment.center,
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          for (final item in DesktopSection.values)
+                            _NavChip(
+                              item: item,
+                              selected: item == section,
+                              onTap: () => onSectionChanged(item),
+                            ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _HeaderRefresh(lastRefreshAt: lastRefreshAt),
+                    ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppPalette.panelMuted,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('最近刷新', style: theme.textTheme.labelMedium),
-                      const SizedBox(height: 4),
-                      Text(lastRefreshAt, style: theme.textTheme.titleMedium),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
+              );
+            }
+
+            return Column(
               children: [
-                for (final item in DesktopSection.values)
-                  _NavChip(
-                    item: item,
-                    selected: item == section,
-                    onTap: () => onSectionChanged(item),
-                  ),
+                Row(
+                  children: [
+                    Expanded(child: _HeaderBrand(theme: theme)),
+                    const SizedBox(width: 12),
+                    _HeaderRefresh(lastRefreshAt: lastRefreshAt),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final item in DesktopSection.values)
+                      _NavChip(
+                        item: item,
+                        selected: item == section,
+                        onTap: () => onSectionChanged(item),
+                      ),
+                  ],
+                ),
               ],
-            ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderBrand extends StatelessWidget {
+  const _HeaderBrand({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 52,
+          height: 52,
+          child: Image.asset(
+            _brandMarkAsset,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('基金监控桌面端', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 3),
+            Text('专业基金监控终端 · Flutter 桌面版', style: theme.textTheme.bodySmall),
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _HeaderRefresh extends StatelessWidget {
+  const _HeaderRefresh({required this.lastRefreshAt});
+
+  final String lastRefreshAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppPalette.panelMuted,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text('最近刷新', style: theme.textTheme.labelMedium),
+          const SizedBox(height: 4),
+          Text(lastRefreshAt, style: theme.textTheme.titleMedium),
+        ],
       ),
     );
   }
