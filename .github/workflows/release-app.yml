@@ -69,14 +69,17 @@ jobs:
           - name: Linux
             runner: ubuntu-latest
             target: linux
+            slug: linux
             artifact_name: app-linux-assets
           - name: macOS
             runner: macos-latest
             target: macos
+            slug: macos
             artifact_name: app-macos-assets
           - name: Windows
             runner: windows-latest
             target: windows
+            slug: windows
             artifact_name: app-windows-assets
 
     steps:
@@ -111,23 +114,21 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#app-v}"
           ARCH="$(uname -m)"
-          if [[ "${ARCH}" == "x86_64" ]]; then ARCH="x64"; fi
-          if [[ "${ARCH}" == "aarch64" ]]; then ARCH="arm64"; fi
+          FILE_NAME="$(dart modules/app/tool/release_asset_name.dart "${VERSION}" "${{ matrix.platform.slug }}" "${ARCH}" zip)"
           mkdir -p .artifacts/release-assets
           cd modules/app/build/linux/x64/release/bundle
-          zip -r "${GITHUB_WORKSPACE}/.artifacts/release-assets/fund-monitor-app-${VERSION}-linux-${ARCH}.zip" .
+          zip -r "${GITHUB_WORKSPACE}/.artifacts/release-assets/${FILE_NAME}" .
 
       - name: Package macOS release asset
         if: matrix.platform.target == 'macos'
         run: |
           VERSION="${GITHUB_REF_NAME#app-v}"
           ARCH="$(uname -m)"
-          if [[ "${ARCH}" == "x86_64" ]]; then ARCH="x64"; fi
-          if [[ "${ARCH}" == "arm64" ]]; then ARCH="arm64"; fi
+          FILE_NAME="$(dart modules/app/tool/release_asset_name.dart "${VERSION}" "${{ matrix.platform.slug }}" "${ARCH}" zip)"
           mkdir -p .artifacts/release-assets
           ditto -c -k --sequesterRsrc --keepParent \
             modules/app/build/macos/Build/Products/Release/fund_monitor_app.app \
-            ".artifacts/release-assets/fund-monitor-app-${VERSION}-macos-${ARCH}.zip"
+            ".artifacts/release-assets/${FILE_NAME}"
 
       - name: Package Windows release asset
         if: matrix.platform.target == 'windows'
@@ -135,10 +136,11 @@ jobs:
         run: |
           $version = $env:GITHUB_REF_NAME -replace '^app-v', ''
           $arch = $env:RUNNER_ARCH.ToLower()
+          $fileName = (dart modules/app/tool/release_asset_name.dart $version '${{ matrix.platform.slug }}' $arch zip).Trim()
           New-Item -ItemType Directory -Force .artifacts/release-assets | Out-Null
           Compress-Archive `
             -Path modules/app/build/windows/x64/runner/Release/* `
-            -DestinationPath ".artifacts/release-assets/fund-monitor-app-$version-windows-$arch.zip"
+            -DestinationPath ".artifacts/release-assets/$fileName"
 
       - name: Upload packaged assets
         uses: actions/upload-artifact@v6
