@@ -230,6 +230,13 @@ async fn manual_fetch_route_shows_latest_quote_in_detail_page() {
     assert!(detail_html.contains("1.2345"));
     assert!(detail_html.contains("0.88%"));
     assert!(detail_html.contains("东方财富净值快照"));
+    assert!(detail_html.contains("data-auto-refresh-url=\"/funds/1/snapshot\""));
+    assert!(detail_html.contains("data-auto-refresh-interval-ms=\"60000\""));
+
+    let snapshot_html = get_html(&app, "/funds/1/snapshot").await;
+    assert!(snapshot_html.contains("id=\"fund-detail-snapshot\""));
+    assert!(snapshot_html.contains("1.2345"));
+    assert!(snapshot_html.contains("0.88%"));
 }
 
 async fn test_app() -> Router {

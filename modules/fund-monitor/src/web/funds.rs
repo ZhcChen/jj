@@ -12,17 +12,20 @@ use axum::{
     Form, Router,
     extract::{Path, State},
     http::StatusCode,
-    response::{IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Redirect, Response},
     routing::{get, post},
 };
 use serde::Deserialize;
 
 use super::layout::{display_date, display_datetime, render_html};
 
+const DETAIL_AUTO_REFRESH_INTERVAL_MS: u64 = 60_000;
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/funds", get(list_funds).post(create_fund))
         .route("/funds/{id}", get(show_fund).post(update_fund))
+        .route("/funds/{id}/snapshot", get(show_fund_snapshot))
         .route("/funds/{id}/fetch", post(fetch_fund))
         .route("/funds/{id}/disable", post(disable_fund))
 }
@@ -79,6 +82,13 @@ struct FundQuoteView {
     source: String,
 }
 
+#[derive(Debug, Clone)]
+struct FundDetailContent {
+    fund: FundDetailView,
+    has_latest_quote: bool,
+    latest_quote: FundQuoteView,
+}
+
 #[derive(Template)]
 #[template(path = "funds/index.html")]
 struct FundsIndexTemplate {
@@ -100,6 +110,16 @@ struct FundDetailTemplate {
     error_message: String,
     has_latest_quote: bool,
     latest_quote: FundQuoteView,
+    auto_refresh_interval_ms: u64,
+}
+
+#[derive(Template)]
+#[template(path = "funds/_snapshot_card.html")]
+struct FundDetailSnapshotTemplate {
+    fund: FundDetailView,
+    has_latest_quote: bool,
+    latest_quote: FundQuoteView,
+    auto_refresh_interval_ms: u64,
 }
 
 pub async fn list_funds(State(state): State<AppState>) -> Result<impl IntoResponse, StatusCode> {
@@ -198,6 +218,21 @@ pub async fn show_fund(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     render_fund_detail_response(&state, fund, StatusCode::OK, None).await
+}
+
+pub async fn show_fund_snapshot(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<Html<String>, StatusCode> {
+    let repo = FundRepo::new(state.pool.clone());
+    let fund = repo
+        .find_by_id(id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let template = build_fund_detail_snapshot_template(&state, fund).await?;
+    render_html(&template)
 }
 
 pub async fn update_fund(
@@ -385,6 +420,38 @@ async fn build_fund_detail_template(
     fund: Fund,
     error_message: Option<String>,
 ) -> Result<FundDetailTemplate, StatusCode> {
+    let detail_content = build_fund_detail_content(state, fund).await?;
+
+    Ok(FundDetailTemplate {
+        title: "基金详情",
+        nav_key: "funds",
+        fund: detail_content.fund,
+        has_error: error_message.is_some(),
+        error_message: error_message.unwrap_or_default(),
+        has_latest_quote: detail_content.has_latest_quote,
+        latest_quote: detail_content.latest_quote,
+        auto_refresh_interval_ms: DETAIL_AUTO_REFRESH_INTERVAL_MS,
+    })
+}
+
+async fn build_fund_detail_snapshot_template(
+    state: &AppState,
+    fund: Fund,
+) -> Result<FundDetailSnapshotTemplate, StatusCode> {
+    let detail_content = build_fund_detail_content(state, fund).await?;
+
+    Ok(FundDetailSnapshotTemplate {
+        fund: detail_content.fund,
+        has_latest_quote: detail_content.has_latest_quote,
+        latest_quote: detail_content.latest_quote,
+        auto_refresh_interval_ms: DETAIL_AUTO_REFRESH_INTERVAL_MS,
+    })
+}
+
+async fn build_fund_detail_content(
+    state: &AppState,
+    fund: Fund,
+) -> Result<FundDetailContent, StatusCode> {
     let quote_repo = QuoteRepo::new(state.pool.clone());
     let latest_quote = quote_repo
         .list_recent_for_fund(fund.id, 1)
@@ -393,12 +460,8 @@ async fn build_fund_detail_template(
 
     let latest_quote = latest_quote.into_iter().next();
 
-    Ok(FundDetailTemplate {
-        title: "基金详情",
-        nav_key: "funds",
+    Ok(FundDetailContent {
         fund: map_fund_detail(fund),
-        has_error: error_message.is_some(),
-        error_message: error_message.unwrap_or_default(),
         has_latest_quote: latest_quote.is_some(),
         latest_quote: latest_quote.map(map_quote_view).unwrap_or_default(),
     })
