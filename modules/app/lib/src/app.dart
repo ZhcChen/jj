@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'app_data.dart';
 import 'app_theme.dart';
 
+const String _brandMarkAsset = 'brand/logo/fund-monitor-mark.png';
+
 void runFundMonitorDesktopApp() {
   runApp(const FundMonitorDesktopApp());
 }
@@ -141,21 +143,13 @@ class _HeaderBar extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppPalette.accentSoft,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'FM',
-                    style: TextStyle(
-                      color: AppPalette.accent,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
+                SizedBox(
+                  width: 52,
+                  height: 52,
+                  child: Image.asset(
+                    _brandMarkAsset,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -166,7 +160,7 @@ class _HeaderBar extends StatelessWidget {
                       Text('基金监控桌面端', style: theme.textTheme.titleLarge),
                       const SizedBox(height: 3),
                       Text(
-                        'Flutter desktop workspace for fund-monitor migration',
+                        '专业基金监控终端 · Flutter 桌面版',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],

@@ -1,0 +1,91 @@
+<svg
+  width="1024"
+  height="1024"
+  viewBox="64 64 896 896"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <clipPath id="fund-monitor-mark-clip">
+      <rect x="64" y="64" width="896" height="896" rx="224" />
+    </clipPath>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="#F4F8FF" />
+  <rect
+    x="64"
+    y="64"
+    width="896"
+    height="896"
+    rx="224"
+    stroke="#D9E4F3"
+    stroke-width="12"
+  />
+
+  <g clip-path="url(#fund-monitor-mark-clip)">
+    <rect
+      x="64"
+      y="64"
+      width="896"
+      height="896"
+      rx="224"
+      fill="#FFFFFF"
+      opacity="0.34"
+    />
+
+    <g stroke="#E2EAF5" stroke-width="12">
+      <path d="M224 160V864" />
+      <path d="M384 160V864" />
+      <path d="M544 160V864" />
+      <path d="M704 160V864" />
+      <path d="M864 160V864" />
+      <path d="M160 224H864" />
+      <path d="M160 384H864" />
+      <path d="M160 544H864" />
+      <path d="M160 704H864" />
+      <path d="M160 864H864" />
+    </g>
+
+    <path
+      d="M176 768H848"
+      stroke="#C8D6E8"
+      stroke-width="20"
+      stroke-linecap="round"
+    />
+
+    <rect
+      x="246"
+      y="520"
+      width="92"
+      height="248"
+      rx="26"
+      fill="#D6E4FA"
+    />
+    <rect
+      x="412"
+      y="404"
+      width="92"
+      height="364"
+      rx="26"
+      fill="#AFCBFA"
+    />
+    <rect
+      x="578"
+      y="300"
+      width="92"
+      height="468"
+      rx="26"
+      fill="#86AEF5"
+    />
+
+    <path
+      d="M176 690C242 690 272 676 312 620C354 560 386 492 446 492C496 492 520 552 574 552C636 552 678 404 750 322L848 218"
+      stroke="#16263D"
+      stroke-width="42"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <circle cx="848" cy="218" r="58" fill="#2F6FD6" />
+    <circle cx="848" cy="218" r="22" fill="#F4F8FF" />
+  </g>
+</svg>
