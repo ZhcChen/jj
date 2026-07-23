@@ -193,13 +193,11 @@ body::before {
   justify-content: flex-end;
   gap: 4px;
   min-width: 0;
-  padding: 6px;
+  padding: 5px;
   border: none;
   border-radius: 999px;
-  background: #edf2f8;
-  box-shadow:
-    0 10px 24px rgba(36, 64, 104, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  background: #e9eef5;
+  box-shadow: 0 8px 18px rgba(36, 64, 104, 0.06);
 }
 
 .nav-link {
@@ -238,18 +236,14 @@ body::before {
 .nav-link:hover,
 .nav-link:focus-visible {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 8px 18px rgba(36, 64, 104, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: none;
 }
 
 .nav-link.active {
   color: var(--accent-strong);
-  background: #dbe7f8;
-  box-shadow:
-    0 10px 22px rgba(47, 111, 214, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(36, 64, 104, 0.10);
 }
 
 .topbar-label,
