@@ -98,15 +98,14 @@ body::before {
 .shell {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   width: min(1500px, calc(100vw - 24px));
-  margin: 12px auto;
+  margin: 12px auto 20px;
 }
 
-.shell-nav,
-.shell-topbar,
+.shell-header,
 .card,
 .metric-card,
 .message,
@@ -120,18 +119,26 @@ body::before {
   backdrop-filter: blur(14px);
 }
 
-.shell-nav {
+.shell-header {
   position: sticky;
   top: 12px;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 24px);
-  padding: 18px;
+  z-index: 30;
+  padding: 14px 18px;
   border-radius: 20px;
 }
 
+.shell-header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
 .nav-brand-block {
-  margin-bottom: 18px;
+  flex: 0 0 auto;
+  margin-bottom: 0;
 }
 
 .brand {
@@ -181,19 +188,23 @@ body::before {
 
 .nav-links {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
 }
 
 .nav-link {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 14px 12px 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  min-width: 124px;
+  padding: 10px 14px 12px;
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: 12px;
   color: var(--text-soft);
   text-decoration: none;
   transition:
@@ -205,10 +216,10 @@ body::before {
 
 .nav-link::before {
   position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 2px;
+  left: 14px;
+  right: 14px;
+  bottom: 6px;
+  height: 2px;
   border-radius: 999px;
   background: transparent;
   content: "";
@@ -254,38 +265,6 @@ body::before {
   font-family: var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-}
-
-.shell-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.shell-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  padding: 12px 18px;
-  border-radius: 16px;
-}
-
-.topbar-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.topbar-label {
-  color: var(--text-muted);
-  font-size: 10px;
-}
-
-.topbar-copy strong {
-  font-size: 18px;
-  font-weight: 700;
 }
 
 .status-pill,
@@ -943,13 +922,14 @@ code {
   .workspace-grid-form-first > .card:first-child,
   .workspace-grid-rule > .card:first-child {
     position: sticky;
-    top: 74px;
+    top: 94px;
   }
 }
 
 @media (max-width: 1180px) {
-  .shell {
-    grid-template-columns: 224px minmax(0, 1fr);
+  .shell-header-main {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .settings-grid {
@@ -959,19 +939,12 @@ code {
 
 @media (max-width: 980px) {
   .shell {
-    grid-template-columns: 1fr;
     width: min(1120px, calc(100vw - 16px));
     margin: 8px auto;
   }
 
-  .shell-nav {
-    position: static;
-    min-height: auto;
-  }
-
   .nav-links {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: flex-start;
   }
 
   .dashboard-grid,
@@ -986,15 +959,14 @@ code {
     width: calc(100vw - 10px);
   }
 
-  .shell-nav,
-  .shell-topbar,
+  .shell-header,
   .card,
   .metric-card {
     padding-left: 14px;
     padding-right: 14px;
   }
 
-  .shell-topbar,
+  .shell-header-main,
   .page-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1017,6 +989,15 @@ code {
   .detail-metric-grid,
   .detail-meta-strip {
     grid-template-columns: 1fr;
+  }
+
+  .nav-links {
+    width: 100%;
+  }
+
+  .nav-link {
+    width: 100%;
+    min-width: 0;
   }
 
   .stack-list-item {
