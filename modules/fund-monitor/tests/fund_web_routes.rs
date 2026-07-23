@@ -230,7 +230,7 @@ async fn manual_fetch_route_shows_latest_quote_in_detail_page() {
     assert!(detail_html.contains("已完成最近一次基金数据抓取"));
     assert!(detail_html.contains("1.2345"));
     assert!(detail_html.contains("0.88%"));
-    assert!(detail_html.contains("eastmoney/pingzhongdata"));
+    assert!(detail_html.contains("东方财富净值快照"));
 }
 
 async fn test_app() -> Router {

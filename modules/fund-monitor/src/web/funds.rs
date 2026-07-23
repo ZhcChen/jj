@@ -345,7 +345,30 @@ fn map_quote_view(quote: FundQuote) -> FundQuoteView {
         estimated_at: format_optional_datetime(quote.estimated_at, display_datetime),
         fetched_at: display_datetime(quote.fetched_at),
         has_estimate_snapshot,
-        source: quote.source,
+        source: format_quote_source(&quote.source),
+    }
+}
+
+fn format_quote_source(source: &str) -> String {
+    let mapped_parts = source
+        .split('+')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .map(format_quote_source_part)
+        .collect::<Vec<_>>();
+
+    if mapped_parts.is_empty() {
+        source.to_owned()
+    } else {
+        mapped_parts.join(" + ")
+    }
+}
+
+fn format_quote_source_part(source: &str) -> String {
+    match source {
+        "eastmoney/pingzhongdata" => "东方财富净值快照".to_owned(),
+        "eastmoney/fundcomapi" => "东方财富实时估值".to_owned(),
+        _ => source.to_owned(),
     }
 }
 
@@ -428,4 +451,26 @@ fn format_optional_datetime(
     formatter: fn(time::OffsetDateTime) -> String,
 ) -> String {
     value.map(formatter).unwrap_or_else(|| "-".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_quote_source;
+
+    #[test]
+    fn formats_known_quote_sources_for_display() {
+        assert_eq!(
+            format_quote_source("eastmoney/pingzhongdata"),
+            "东方财富净值快照"
+        );
+        assert_eq!(
+            format_quote_source("eastmoney/pingzhongdata+eastmoney/fundcomapi"),
+            "东方财富净值快照 + 东方财富实时估值"
+        );
+    }
+
+    #[test]
+    fn preserves_unknown_quote_sources() {
+        assert_eq!(format_quote_source("mock-source"), "mock-source");
+    }
 }
