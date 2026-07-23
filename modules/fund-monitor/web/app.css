@@ -961,11 +961,19 @@ h1 {
 .metric strong {
   display: block;
   margin-top: 10px;
-  color: var(--accent-strong);
+  color: var(--text);
   font-family: var(--mono);
   font-size: 22px;
   line-height: 1.2;
   word-break: break-word;
+}
+
+.metric strong.is-up {
+  color: var(--danger);
+}
+
+.metric strong.is-down {
+  color: var(--success);
 }
 
 .detail-meta-strip {

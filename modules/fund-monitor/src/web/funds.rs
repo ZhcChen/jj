@@ -74,8 +74,10 @@ struct FundQuoteView {
     unit_nav: String,
     nav_date: String,
     confirmed_change_rate: String,
+    confirmed_change_rate_tone: String,
     estimated_nav: String,
     estimated_change_rate: String,
+    estimated_change_rate_tone: String,
     estimated_at: String,
     fetched_at: String,
     has_estimate_snapshot: bool,
@@ -355,12 +357,22 @@ fn map_quote_view(quote: FundQuote) -> FundQuoteView {
         unit_nav: format_optional_decimal(quote.unit_nav, 4, ""),
         nav_date: format_optional_datetime(quote.nav_date, display_date),
         confirmed_change_rate: format_optional_decimal(quote.confirmed_change_rate, 2, "%"),
+        confirmed_change_rate_tone: change_rate_tone(quote.confirmed_change_rate).to_owned(),
         estimated_nav: format_optional_decimal(quote.estimated_nav, 4, ""),
         estimated_change_rate: format_optional_decimal(quote.estimated_change_rate, 2, "%"),
+        estimated_change_rate_tone: change_rate_tone(quote.estimated_change_rate).to_owned(),
         estimated_at: format_optional_datetime(quote.estimated_at, display_datetime),
         fetched_at: display_datetime(quote.fetched_at),
         has_estimate_snapshot,
         source: format_quote_source(&quote.source),
+    }
+}
+
+fn change_rate_tone(value: Option<f64>) -> &'static str {
+    match value {
+        Some(value) if value > 0.0 => "is-up",
+        Some(value) if value < 0.0 => "is-down",
+        _ => "",
     }
 }
 
@@ -483,7 +495,7 @@ fn format_optional_datetime(
 
 #[cfg(test)]
 mod tests {
-    use super::format_quote_source;
+    use super::{change_rate_tone, format_quote_source};
 
     #[test]
     fn formats_known_quote_sources_for_display() {
@@ -500,5 +512,13 @@ mod tests {
     #[test]
     fn preserves_unknown_quote_sources() {
         assert_eq!(format_quote_source("mock-source"), "mock-source");
+    }
+
+    #[test]
+    fn maps_change_rate_tone_for_cn_market_colors() {
+        assert_eq!(change_rate_tone(Some(1.23)), "is-up");
+        assert_eq!(change_rate_tone(Some(-0.45)), "is-down");
+        assert_eq!(change_rate_tone(Some(0.0)), "");
+        assert_eq!(change_rate_tone(None), "");
     }
 }

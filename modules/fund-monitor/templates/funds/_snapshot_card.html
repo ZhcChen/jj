@@ -30,7 +30,7 @@
         </div>
         <div class="metric">
           <span class="detail-label">净值日涨跌幅</span>
-          <strong>{{ latest_quote.confirmed_change_rate }}</strong>
+          <strong class="{{ latest_quote.confirmed_change_rate_tone }}">{{ latest_quote.confirmed_change_rate }}</strong>
         </div>
       </div>
     </div>
@@ -50,7 +50,7 @@
         </div>
         <div class="metric">
           <span class="detail-label">估算涨跌幅</span>
-          <strong>{{ latest_quote.estimated_change_rate }}</strong>
+          <strong class="{{ latest_quote.estimated_change_rate_tone }}">{{ latest_quote.estimated_change_rate }}</strong>
         </div>
         <div class="metric">
           <span class="detail-label">估值时间</span>
