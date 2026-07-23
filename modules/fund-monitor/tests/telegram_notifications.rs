@@ -98,7 +98,7 @@ fn telegram_config_partial_missing_returns_clear_error() {
     let config = AppConfig {
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url: "sqlite://data/test.db".to_owned(),
-        poll_interval_seconds: 300,
+        poll_interval_seconds: 60,
         telegram_api_base_url: "https://api.telegram.org".to_owned(),
         telegram_bot_token: Some(TELEGRAM_BOT_TOKEN.to_owned()),
         telegram_chat_id: None,

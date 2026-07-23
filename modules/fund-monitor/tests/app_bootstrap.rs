@@ -19,7 +19,7 @@ async fn bootstrap_initializes_sqlite_and_runs_migrations() {
     let config = AppConfig {
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
-        poll_interval_seconds: 300,
+        poll_interval_seconds: 60,
         telegram_api_base_url: "https://api.telegram.org".to_owned(),
         telegram_bot_token: None,
         telegram_chat_id: None,
@@ -34,12 +34,12 @@ async fn bootstrap_initializes_sqlite_and_runs_migrations() {
 
     let settings = AppSettingRepo::new(state.pool.clone());
     let saved = settings
-        .set("poll_interval_seconds", "300")
+        .set("poll_interval_seconds", "60")
         .await
         .expect("insert setting");
 
     assert_eq!(saved.key, "poll_interval_seconds");
-    assert_eq!(saved.value, "300");
+    assert_eq!(saved.value, "60");
 
     ensure_default_funds(&state.pool)
         .await

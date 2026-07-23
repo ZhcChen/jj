@@ -164,7 +164,7 @@ fn test_config() -> AppConfig {
     AppConfig {
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
-        poll_interval_seconds: 300,
+        poll_interval_seconds: 60,
         telegram_api_base_url: "https://api.telegram.org".to_owned(),
         telegram_bot_token: None,
         telegram_chat_id: None,

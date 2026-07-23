@@ -3,7 +3,7 @@ use std::env;
 
 const DEFAULT_BIND_ADDR: &str = "127.0.0.1:8866";
 const DEFAULT_DATABASE_URL: &str = "sqlite://data/fund-monitor.db";
-const DEFAULT_POLL_INTERVAL_SECONDS: u64 = 300;
+const DEFAULT_POLL_INTERVAL_SECONDS: u64 = 60;
 const DEFAULT_TELEGRAM_API_BASE_URL: &str = "https://api.telegram.org";
 
 #[derive(Debug, Clone)]

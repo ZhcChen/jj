@@ -101,7 +101,7 @@ async fn test_state_with_base_url(base_url: &str) -> fund_monitor::app::state::A
     let config = AppConfig {
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
-        poll_interval_seconds: 300,
+        poll_interval_seconds: 60,
         telegram_api_base_url: base_url.to_owned(),
         telegram_bot_token: Some(TELEGRAM_BOT_TOKEN.to_owned()),
         telegram_chat_id: Some("123456".to_owned()),

@@ -95,7 +95,7 @@ async fn seeded_state(with_quote_history: bool) -> fund_monitor::app::state::App
     let config = AppConfig {
         bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
-        poll_interval_seconds: 300,
+        poll_interval_seconds: 60,
         telegram_api_base_url: "https://api.telegram.org".to_owned(),
         telegram_bot_token: Some("TEST_TOKEN".to_owned()),
         telegram_chat_id: Some("123456".to_owned()),
