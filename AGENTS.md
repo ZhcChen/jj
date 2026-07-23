@@ -3,6 +3,7 @@
 ## 项目定位
 - 本项目用于基金监控。
 - 当前首个业务模块命名为 `fund-monitor`，路径为 `modules/fund-monitor`。
+- 当前已新增桌面端模块 `app`，路径为 `modules/app`。
 
 ## 技术栈与模块约定
 - 仓库按模块组织，业务模块统一放在 `modules/`。
@@ -10,6 +11,7 @@
 - Rust Web 框架固定为 `axum`。
 - 页面使用原生 `html + css + js`。
 - 页面与静态资源默认按“可打包进 Rust 二进制”设计，静态资源优先使用 `rust-embed`；需要服务端模板时优先 `askama`。
+- 桌面端模块 `modules/app` 使用 Flutter 开发，当前先支持 `Windows / macOS / Linux`，未来再补 `Android / iOS`。
 
 ## 工作模式
 - 本项目默认启用 **Compound Engineering (CE)** 作为主要 AI 工作架构。

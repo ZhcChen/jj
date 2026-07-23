@@ -1,0 +1,200 @@
+name: Release App
+
+on:
+  push:
+    tags:
+      - "app-v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-app-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate-tag:
+    name: Validate app release tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Verify tag matches app version
+        run: dart modules/app/tool/verify_release_tag.dart "${RELEASE_TAG}"
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+  quality:
+    name: Analyze and test app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install app dependencies
+        working-directory: modules/app
+        run: flutter pub get
+
+      - name: Flutter analyze
+        working-directory: modules/app
+        run: flutter analyze
+
+      - name: Flutter test
+        working-directory: modules/app
+        run: flutter test
+
+  build:
+    name: Build app for ${{ matrix.platform.name }}
+    needs:
+      - validate-tag
+      - quality
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: Linux
+            runner: ubuntu-latest
+            target: linux
+            artifact_name: app-linux-assets
+          - name: macOS
+            runner: macos-latest
+            target: macos
+            artifact_name: app-macos-assets
+          - name: Windows
+            runner: windows-latest
+            target: windows
+            artifact_name: app-windows-assets
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Linux desktop dependencies
+        if: matrix.platform.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake libgtk-3-dev ninja-build pkg-config zip
+
+      - name: Enable desktop target
+        run: flutter config --enable-${{ matrix.platform.target }}-desktop
+
+      - name: Install app dependencies
+        working-directory: modules/app
+        run: flutter pub get
+
+      - name: Build release bundle
+        working-directory: modules/app
+        run: flutter build ${{ matrix.platform.target }} --release
+
+      - name: Package Linux release asset
+        if: matrix.platform.target == 'linux'
+        run: |
+          VERSION="${GITHUB_REF_NAME#app-v}"
+          ARCH="$(uname -m)"
+          if [[ "${ARCH}" == "x86_64" ]]; then ARCH="x64"; fi
+          if [[ "${ARCH}" == "aarch64" ]]; then ARCH="arm64"; fi
+          mkdir -p .artifacts/release-assets
+          cd modules/app/build/linux/x64/release/bundle
+          zip -r "${GITHUB_WORKSPACE}/.artifacts/release-assets/fund-monitor-app-${VERSION}-linux-${ARCH}.zip" .
+
+      - name: Package macOS release asset
+        if: matrix.platform.target == 'macos'
+        run: |
+          VERSION="${GITHUB_REF_NAME#app-v}"
+          ARCH="$(uname -m)"
+          if [[ "${ARCH}" == "x86_64" ]]; then ARCH="x64"; fi
+          if [[ "${ARCH}" == "arm64" ]]; then ARCH="arm64"; fi
+          mkdir -p .artifacts/release-assets
+          ditto -c -k --sequesterRsrc --keepParent \
+            modules/app/build/macos/Build/Products/Release/fund_monitor_app.app \
+            ".artifacts/release-assets/fund-monitor-app-${VERSION}-macos-${ARCH}.zip"
+
+      - name: Package Windows release asset
+        if: matrix.platform.target == 'windows'
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^app-v', ''
+          $arch = $env:RUNNER_ARCH.ToLower()
+          New-Item -ItemType Directory -Force .artifacts/release-assets | Out-Null
+          Compress-Archive `
+            -Path modules/app/build/windows/x64/runner/Release/* `
+            -DestinationPath ".artifacts/release-assets/fund-monitor-app-$version-windows-$arch.zip"
+
+      - name: Upload packaged assets
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.platform.artifact_name }}
+          path: .artifacts/release-assets/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish app release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Download packaged assets
+        uses: actions/download-artifact@v5
+        with:
+          path: .artifacts/release-assets
+          pattern: app-*-assets
+          merge-multiple: true
+
+      - name: Generate release notes
+        run: |
+          dart modules/app/tool/generate_release_notes.dart \
+            "${RELEASE_TAG}" \
+            ".artifacts/release-assets" \
+            ".artifacts/release-notes.md"
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "${RELEASE_TAG}" > /dev/null 2>&1; then
+            mapfile -t EXISTING_ASSETS < <(gh release view "${RELEASE_TAG}" --json assets --jq '.assets[].name')
+
+            for ASSET_NAME in "${EXISTING_ASSETS[@]}"; do
+              gh release delete-asset "${RELEASE_TAG}" "${ASSET_NAME}" --yes
+            done
+
+            gh release upload "${RELEASE_TAG}" .artifacts/release-assets/* --clobber
+            gh release edit "${RELEASE_TAG}" \
+              --title "Fund Monitor App ${RELEASE_TAG}" \
+              --notes-file .artifacts/release-notes.md
+          else
+            gh release create "${RELEASE_TAG}" .artifacts/release-assets/* \
+              --title "Fund Monitor App ${RELEASE_TAG}" \
+              --notes-file .artifacts/release-notes.md
+          fi
