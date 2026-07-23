@@ -41,56 +41,51 @@ class _DesktopWorkspaceState extends State<DesktopWorkspace> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1480),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-              child: Column(
-                children: [
-                  _HeaderBar(
-                    section: _section,
-                    lastRefreshAt: _data.lastRefreshAt,
-                    onSectionChanged: (section) {
-                      setState(() {
-                        _section = section;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: AppPalette.shadow,
-                            blurRadius: 42,
-                            offset: Offset(0, 18),
-                          ),
-                        ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+          child: Column(
+            children: [
+              _HeaderBar(
+                section: _section,
+                lastRefreshAt: _data.lastRefreshAt,
+                onSectionChanged: (section) {
+                  setState(() {
+                    _section = section;
+                  });
+                },
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppPalette.shadow,
+                        blurRadius: 42,
+                        offset: Offset(0, 18),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
-                        child: ColoredBox(
-                          color: const Color(0xCCFFFFFF),
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(18),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 180),
-                              child: KeyedSubtree(
-                                key: ValueKey<DesktopSection>(_section),
-                                child: _buildSection(theme),
-                              ),
-                            ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: ColoredBox(
+                      color: const Color(0xCCFFFFFF),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(18),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: KeyedSubtree(
+                            key: ValueKey<DesktopSection>(_section),
+                            child: _buildSection(theme),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
