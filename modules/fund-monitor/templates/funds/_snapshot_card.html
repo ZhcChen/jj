@@ -5,17 +5,66 @@
 >
   <article class="card detail-snapshot-card">
     <div class="card-header">
-      <h2>行情快照</h2>
-      {% if has_latest_quote %}
-      <span class="badge">已入库</span>
-      {% else %}
-      <span class="badge">暂无数据</span>
-      {% endif %}
+      <h2>基金详情</h2>
+      <span class="badge">只读</span>
+    </div>
+
+    <div class="detail-overview-block">
+      <div class="detail-overview-head">
+        <div>
+          <h3>{{ fund.name }}</h3>
+          <p>{{ fund.code }}</p>
+        </div>
+        {% if has_latest_quote %}
+        <span class="detail-panel-tag active">已接入快照</span>
+        {% else %}
+        <span class="detail-panel-tag">暂无快照</span>
+        {% endif %}
+      </div>
+
+      <div class="detail-info-grid">
+        <div class="detail-info-card">
+          <span class="detail-label">基金代码</span>
+          <strong>{{ fund.code }}</strong>
+        </div>
+        <div class="detail-info-card">
+          <span class="detail-label">基金名称</span>
+          <strong>{{ fund.name }}</strong>
+        </div>
+        <div class="detail-info-card">
+          <span class="detail-label">分组</span>
+          {% if fund.group_name.is_empty() %}
+          <strong class="muted">-</strong>
+          {% else %}
+          <strong>{{ fund.group_name }}</strong>
+          {% endif %}
+        </div>
+        <div class="detail-info-card">
+          <span class="detail-label">标签</span>
+          {% if fund.tags.is_empty() %}
+          <strong class="muted">-</strong>
+          {% else %}
+          <strong>{{ fund.tags }}</strong>
+          {% endif %}
+        </div>
+        <div class="detail-info-card detail-info-card-wide">
+          <span class="detail-label">备注</span>
+          {% if fund.note.is_empty() %}
+          <strong class="muted">-</strong>
+          {% else %}
+          <strong>{{ fund.note }}</strong>
+          {% endif %}
+        </div>
+      </div>
     </div>
 
     {% if has_latest_quote %}
     <div class="detail-panel-block">
       <div class="detail-panel-head">
+        <h3>行情快照</h3>
+        <span class="detail-panel-tag">自动刷新</span>
+      </div>
+      <div class="detail-panel-head detail-panel-head-sub">
         <h3>确认净值口径</h3>
         <span class="detail-panel-tag">官方净值</span>
       </div>
@@ -35,7 +84,7 @@
       </div>
     </div>
     <div class="detail-panel-block">
-      <div class="detail-panel-head">
+      <div class="detail-panel-head detail-panel-head-sub">
         <h3>盘中估值口径</h3>
         {% if latest_quote.has_estimate_snapshot %}
         <span class="detail-panel-tag active">实时估算</span>

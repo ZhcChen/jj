@@ -5,48 +5,7 @@
 <section class="message error">{{ error_message }}</section>
 {% endif %}
 
-<section class="detail-grid">
-  <div class="detail-main-stack">
-    {% include "funds/_snapshot_card.html" %}
-  </div>
-
-  <div class="detail-side-stack">
-    <article class="card detail-form-card">
-      <div class="card-header">
-        <h2>基金资料</h2>
-        <span class="badge">可编辑</span>
-      </div>
-
-      <div class="detail-row detail-row-leading">
-        <span class="detail-label">基金代码</span>
-        <code>{{ fund.code }}</code>
-      </div>
-
-      <form class="stack-form" method="post" action="/funds/{{ fund.id }}">
-        <label>
-          <span>基金名称</span>
-          <input type="text" name="name" value="{{ fund.name }}" />
-        </label>
-        <div class="inline-field-grid detail-inline-grid">
-          <label>
-            <span>分组</span>
-            <input type="text" name="group_name" value="{{ fund.group_name }}" />
-          </label>
-          <label>
-            <span>标签</span>
-            <input type="text" name="tags" value="{{ fund.tags }}" />
-          </label>
-        </div>
-        <label class="detail-note-field">
-          <span>备注</span>
-          <textarea name="note" rows="4">{{ fund.note }}</textarea>
-        </label>
-
-        <div class="button-row">
-          <button class="button primary" type="submit">保存修改</button>
-        </div>
-      </form>
-    </article>
-  </div>
+<section class="detail-main-stack">
+  {% include "funds/_snapshot_card.html" %}
 </section>
 {% endblock %}

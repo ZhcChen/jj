@@ -138,6 +138,10 @@ async fn update_fund_metadata_is_visible_in_list_and_detail() {
     assert!(detail_html.contains("示例基金A"));
     assert!(detail_html.contains("观察"));
     assert!(detail_html.contains("更新备注"));
+    assert!(detail_html.contains("基金详情"));
+    assert!(detail_html.contains("只读"));
+    assert!(!detail_html.contains("<form"));
+    assert!(!detail_html.contains("保存修改"));
 }
 
 #[tokio::test]
@@ -227,14 +231,19 @@ async fn manual_fetch_route_shows_latest_quote_in_detail_page() {
     );
 
     let detail_html = get_html(&app, "/funds/1?fetched=1").await;
+    assert!(detail_html.contains("基金详情"));
+    assert!(detail_html.contains("只读"));
     assert!(detail_html.contains("1.2345"));
     assert!(detail_html.contains("0.88%"));
     assert!(detail_html.contains("东方财富净值快照"));
     assert!(detail_html.contains("data-auto-refresh-url=\"/funds/1/snapshot\""));
     assert!(detail_html.contains("data-auto-refresh-interval-ms=\"60000\""));
+    assert!(!detail_html.contains("<form"));
+    assert!(!detail_html.contains("保存修改"));
 
     let snapshot_html = get_html(&app, "/funds/1/snapshot").await;
     assert!(snapshot_html.contains("id=\"fund-detail-snapshot\""));
+    assert!(snapshot_html.contains("基金详情"));
     assert!(snapshot_html.contains("1.2345"));
     assert!(snapshot_html.contains("0.88%"));
 }
