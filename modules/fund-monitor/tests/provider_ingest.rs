@@ -1,4 +1,8 @@
-use axum::{Router, http::header, routing::get};
+use axum::{
+    Router,
+    http::header,
+    routing::{get, post},
+};
 use fund_monitor::{
     app::config::AppConfig,
     build_state_with_fund_source,
@@ -185,6 +189,33 @@ async fn estimated_snapshot_fields_are_kept_separate_from_confirmed_nav() {
     assert!(quote.estimated_at.is_some());
 }
 
+#[tokio::test]
+async fn valuation_endpoint_backfills_estimated_snapshot_when_pingzhongdata_has_none() {
+    let server = spawn_fixture_server_with_valuation(
+        valid_fixture("000001", "示例基金", 1.2401, 0.45),
+        Some(valuation_fixture(1.2688, 2.31, "2026-07-23 14:38")),
+    )
+    .await;
+    let state = test_state_with_base_url(&server.base_url).await;
+
+    let fund = create_fund(&state.pool, "000001", "示例基金").await;
+    let quote_repo = QuoteRepo::new(state.pool.clone());
+    let job_repo = JobRepo::new(state.pool.clone());
+
+    let quote =
+        fetch_and_store_fund_quote(state.fund_source.as_ref(), &fund, &quote_repo, &job_repo)
+            .await
+            .expect("ingest estimated snapshot from valuation api");
+
+    assert_eq!(quote.unit_nav, Some(1.2401));
+    assert_eq!(quote.confirmed_change_rate, Some(0.45));
+    assert_eq!(quote.estimated_nav, Some(1.2688));
+    assert_eq!(quote.estimated_change_rate, Some(2.31));
+    assert_eq!(quote.change_rate, Some(2.31));
+    assert_eq!(quote.source, "eastmoney/pingzhongdata+eastmoney/fundcomapi");
+    assert!(quote.estimated_at.is_some());
+}
+
 async fn create_fund(
     pool: &sqlx::SqlitePool,
     code: &str,
@@ -244,7 +275,14 @@ impl Drop for FixtureServer {
 }
 
 async fn spawn_fixture_server(body: String) -> FixtureServer {
-    let app = Router::new().route(
+    spawn_fixture_server_with_valuation(body, None).await
+}
+
+async fn spawn_fixture_server_with_valuation(
+    body: String,
+    valuation_body: Option<String>,
+) -> FixtureServer {
+    let mut app = Router::new().route(
         "/pingzhongdata/000001.js",
         get({
             let body = body.clone();
@@ -262,6 +300,24 @@ async fn spawn_fixture_server(body: String) -> FixtureServer {
             }
         }),
     );
+
+    if let Some(valuation_body) = valuation_body {
+        app = app.route(
+            "/mm/newCore/FundValuationLast",
+            post({
+                let valuation_body = valuation_body.clone();
+                move || {
+                    let valuation_body = valuation_body.clone();
+                    async move {
+                        (
+                            [(header::CONTENT_TYPE, "application/json; charset=utf-8")],
+                            valuation_body,
+                        )
+                    }
+                }
+            }),
+        );
+    }
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
@@ -285,4 +341,10 @@ fn valid_fixture(code: &str, name: &str, unit_nav: f64, change_rate: f64) -> Str
 
 fn estimated_fixture() -> String {
     r#"var fS_name = "示例基金";var fS_code = "000001";var gsz = "1.2523";var gszzl = "1.13";var gztime = "2026-07-22 14:36";var Data_netWorthTrend = [{"x":1721606400000,"y":1.1111,"equityReturn":0.11},{"x":1721692800000,"y":1.2401,"equityReturn":0.45}];"#.to_owned()
+}
+
+fn valuation_fixture(estimated_nav: f64, change_rate: f64, estimated_at: &str) -> String {
+    format!(
+        r#"{{"data":[{{"GSZ":{estimated_nav},"GSZZL":{change_rate},"GZTIME":"{estimated_at}"}}],"errorCode":0,"success":true}}"#
+    )
 }

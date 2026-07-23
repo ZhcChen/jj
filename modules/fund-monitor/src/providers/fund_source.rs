@@ -14,6 +14,18 @@ use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
 use super::http_client::HttpClient;
 
 const SOURCE_NAME: &str = "eastmoney/pingzhongdata";
+const VALUATION_SOURCE_NAME: &str = "eastmoney/fundcomapi";
+const EASTMONEY_BASE_URL: &str = "https://fund.eastmoney.com";
+const VALUATION_PRIMARY_BASE_URL: &str = "https://fundcomapi.eastmoney.com";
+const VALUATION_FALLBACK_BASE_URL: &str = "https://fundcomapi.tiantianfunds.com";
+const VALUATION_PATH: &str = concat!(
+    "mm/newCore/FundValuationLast?",
+    "deviceid=1234567.py.service&",
+    "version=6.5.5&",
+    "appVersion=6.5.5&",
+    "product=EFund&",
+    "plat=Iphone"
+);
 
 static NAME_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"var\s+fS_name\s*=\s*"([^"]+)";"#).expect("compile fS_name regex")
@@ -50,11 +62,24 @@ pub struct FetchedFundSnapshot {
 #[derive(Clone)]
 pub struct EastmoneyFundSource {
     http_client: HttpClient,
+    valuation_clients: Vec<HttpClient>,
 }
 
 impl EastmoneyFundSource {
     pub fn new(http_client: HttpClient) -> Self {
-        Self { http_client }
+        let valuation_clients = if http_client.base_url() == EASTMONEY_BASE_URL {
+            vec![
+                http_client.with_base_url(VALUATION_PRIMARY_BASE_URL),
+                http_client.with_base_url(VALUATION_FALLBACK_BASE_URL),
+            ]
+        } else {
+            vec![http_client.clone()]
+        };
+
+        Self {
+            http_client,
+            valuation_clients,
+        }
     }
 
     pub async fn fetch_snapshot(
@@ -70,7 +95,33 @@ impl EastmoneyFundSource {
             FundIngestError::source_unavailable(format!("请求基金数据源失败：{err:#}"))
         })?;
 
-        parse_pingzhongdata(fund_code, &body)
+        let mut snapshot = parse_pingzhongdata(fund_code, &body)?;
+
+        if let Some(valuation) = self.fetch_valuation_snapshot(fund_code).await {
+            merge_valuation_snapshot(&mut snapshot, valuation);
+        }
+
+        Ok(snapshot)
+    }
+
+    async fn fetch_valuation_snapshot(&self, fund_code: &str) -> Option<ValuationSnapshot> {
+        let form = vec![
+            ("FCODES".to_owned(), fund_code.to_owned()),
+            ("FIELDS".to_owned(), "GSZZL,GZTIME,GSZ".to_owned()),
+        ];
+
+        for client in &self.valuation_clients {
+            let body = match client.post_form_text(VALUATION_PATH, &form).await {
+                Ok(body) => body,
+                Err(_) => continue,
+            };
+
+            if let Some(snapshot) = parse_valuation_snapshot(&body) {
+                return Some(snapshot);
+            }
+        }
+
+        None
     }
 }
 
@@ -184,6 +235,51 @@ fn parse_pingzhongdata(
     })
 }
 
+fn parse_valuation_snapshot(body: &str) -> Option<ValuationSnapshot> {
+    let response: ValuationLastResponse = serde_json::from_str(body).ok()?;
+    if response.error_code.unwrap_or(0) != 0 {
+        return None;
+    }
+
+    let item = response.data?.into_iter().next()?;
+    let estimated_nav = item.estimated_nav;
+    let estimated_change_rate = item.estimated_change_rate;
+    let estimated_at = item
+        .estimated_at
+        .as_deref()
+        .and_then(parse_eastmoney_local_datetime);
+
+    if estimated_nav.is_none() && estimated_change_rate.is_none() {
+        return None;
+    }
+
+    Some(ValuationSnapshot {
+        estimated_nav,
+        estimated_change_rate,
+        estimated_at,
+    })
+}
+
+fn merge_valuation_snapshot(snapshot: &mut FetchedFundSnapshot, valuation: ValuationSnapshot) {
+    let estimated_nav = valuation.estimated_nav.or(snapshot.estimated_nav);
+    let estimated_change_rate = valuation
+        .estimated_change_rate
+        .or_else(|| compute_estimated_change_rate(snapshot.unit_nav, valuation.estimated_nav))
+        .or(snapshot.estimated_change_rate);
+
+    if estimated_nav.is_none() && estimated_change_rate.is_none() {
+        return;
+    }
+
+    snapshot.estimated_nav = estimated_nav;
+    snapshot.estimated_change_rate = estimated_change_rate;
+    snapshot.estimated_at = valuation.estimated_at.or(snapshot.estimated_at);
+    snapshot.change_rate = snapshot
+        .estimated_change_rate
+        .or(snapshot.confirmed_change_rate);
+    snapshot.source = merge_source_names(&snapshot.source, VALUATION_SOURCE_NAME);
+}
+
 async fn record_job_failure(
     job_repo: &JobRepo,
     job_id: i64,
@@ -262,6 +358,16 @@ fn parse_eastmoney_local_datetime(value: &str) -> Option<OffsetDateTime> {
     )
 }
 
+fn compute_estimated_change_rate(unit_nav: Option<f64>, estimated_nav: Option<f64>) -> Option<f64> {
+    let unit_nav = unit_nav?;
+    let estimated_nav = estimated_nav?;
+    if unit_nav == 0.0 {
+        return None;
+    }
+
+    Some(((estimated_nav - unit_nav) / unit_nav) * 100.0)
+}
+
 fn compute_nav_change_rate(history: &[NetWorthPoint]) -> Option<f64> {
     if history.len() < 2 {
         return None;
@@ -276,6 +382,14 @@ fn compute_nav_change_rate(history: &[NetWorthPoint]) -> Option<f64> {
     Some(((latest.y - previous.y) / previous.y) * 100.0)
 }
 
+fn merge_source_names(current: &str, extra: &str) -> String {
+    if current.contains(extra) {
+        return current.to_owned();
+    }
+
+    format!("{current}+{extra}")
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct NetWorthPoint {
     #[serde(rename = "equityReturn")]
@@ -283,4 +397,28 @@ struct NetWorthPoint {
     #[serde(rename = "x")]
     timestamp_ms: i64,
     y: f64,
+}
+
+#[derive(Debug, Clone)]
+struct ValuationSnapshot {
+    estimated_nav: Option<f64>,
+    estimated_change_rate: Option<f64>,
+    estimated_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ValuationLastResponse {
+    data: Option<Vec<ValuationLastItem>>,
+    #[serde(rename = "errorCode")]
+    error_code: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ValuationLastItem {
+    #[serde(rename = "GSZ")]
+    estimated_nav: Option<f64>,
+    #[serde(rename = "GSZZL")]
+    estimated_change_rate: Option<f64>,
+    #[serde(rename = "GZTIME")]
+    estimated_at: Option<String>,
 }
