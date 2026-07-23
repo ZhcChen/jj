@@ -23,8 +23,9 @@ async fn dashboard_page_shows_overview_and_latest_alert_summary() {
 
     let html = get_html(&app, "/dashboard").await;
     assert!(html.contains("总览看板"));
-    assert!(html.contains("启用基金数"));
-    assert!(html.contains("最近轮询状态"));
+    assert!(html.contains("监控总信号"));
+    assert!(html.contains("启用基金"));
+    assert!(html.contains("基金池快照"));
     assert!(html.contains("示例基金A (000001)"));
     assert!(html.contains("涨跌幅超过阈值"));
     assert!(html.contains("poll_funds"));
