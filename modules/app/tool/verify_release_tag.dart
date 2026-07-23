@@ -25,9 +25,12 @@ Future<void> main(List<String> args) async {
   final releaseVersion = packageVersion.split('+').first;
   final expectedTag = 'app-v$releaseVersion';
 
-  if (releaseTag != expectedTag) {
+  final isExactMatch = releaseTag == expectedTag;
+  final isPreReleaseMatch = releaseTag.startsWith('$expectedTag-');
+
+  if (!isExactMatch && !isPreReleaseMatch) {
     stderr.writeln(
-      'Release tag mismatch: expected $expectedTag, got $releaseTag.',
+      'Release tag mismatch: expected $expectedTag or $expectedTag-<suffix>, got $releaseTag.',
     );
     exitCode = 1;
     return;

@@ -1,0 +1,88 @@
+name: Repair App Release Notes
+
+on:
+  push:
+    tags:
+      - "repair-app-release-notes/app-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing app release tag, for example app-v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-app-release-notes-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    name: Repair ${{ inputs.release_tag || github.ref_name }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve target release tag
+        id: resolve
+        env:
+          RAW_RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          RELEASE_TAG="${RAW_RELEASE_TAG#repair-app-release-notes/}"
+
+          if [[ ! "${RELEASE_TAG}" =~ ^app-v[0-9]+\.[0-9]+\.[0-9]+([-.].+)?$ ]]; then
+            echo "Unsupported release tag: ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+
+          echo "release_tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Ensure release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+        run: gh release view "${RELEASE_TAG}"
+
+      - name: Download existing release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+        run: gh release download "${RELEASE_TAG}" --dir .artifacts/publish-assets --pattern "*"
+
+      - name: Generate release notes
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+        run: |
+          dart modules/app/tool/generate_release_notes.dart \
+            "${RELEASE_TAG}" \
+            "${GITHUB_REPOSITORY}" \
+            ".artifacts/publish-assets" \
+            ".artifacts/release-notes.md"
+
+      - name: Update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+        run: |
+          if [[ "${RELEASE_TAG}" =~ ^app-v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          else
+            PRERELEASE_FLAG=""
+          fi
+
+          gh release edit "${RELEASE_TAG}" \
+            --title "Fund Monitor App ${RELEASE_TAG}" \
+            --notes-file .artifacts/release-notes.md \
+            ${PRERELEASE_FLAG}

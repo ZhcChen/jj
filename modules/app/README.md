@@ -53,3 +53,9 @@ flutter create --platforms=android,ios .
    - 在 Windows / macOS / Linux 构建桌面产物
    - 将各平台产物整理成 zip 下载包
    - 创建或更新对应的 GitHub Release
+   - 生成按平台/架构分组的 release notes 与变更对比链接
+
+如果已有 release 的说明需要重建，可使用：
+
+- Actions 手动运行 `Repair App Release Notes`
+- 或推送修复 tag，例如 `repair-app-release-notes/app-v0.1.0`

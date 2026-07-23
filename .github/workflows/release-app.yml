@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -81,7 +81,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -153,7 +153,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -162,7 +164,7 @@ jobs:
           cache: true
 
       - name: Download packaged assets
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           path: .artifacts/release-assets
           pattern: app-*-assets
@@ -172,16 +174,25 @@ jobs:
         run: |
           dart modules/app/tool/generate_release_notes.dart \
             "${RELEASE_TAG}" \
+            "${GITHUB_REPOSITORY}" \
             ".artifacts/release-assets" \
             ".artifacts/release-notes.md"
         env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
 
       - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
+          if [[ "${RELEASE_TAG}" =~ ^app-v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          else
+            PRERELEASE_FLAG=""
+          fi
+
           if gh release view "${RELEASE_TAG}" > /dev/null 2>&1; then
             mapfile -t EXISTING_ASSETS < <(gh release view "${RELEASE_TAG}" --json assets --jq '.assets[].name')
 
@@ -192,9 +203,11 @@ jobs:
             gh release upload "${RELEASE_TAG}" .artifacts/release-assets/* --clobber
             gh release edit "${RELEASE_TAG}" \
               --title "Fund Monitor App ${RELEASE_TAG}" \
-              --notes-file .artifacts/release-notes.md
+              --notes-file .artifacts/release-notes.md \
+              ${PRERELEASE_FLAG}
           else
             gh release create "${RELEASE_TAG}" .artifacts/release-assets/* \
               --title "Fund Monitor App ${RELEASE_TAG}" \
-              --notes-file .artifacts/release-notes.md
+              --notes-file .artifacts/release-notes.md \
+              ${PRERELEASE_FLAG}
           fi
