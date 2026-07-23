@@ -1,14 +1,12 @@
 use anyhow::{Context, Result, bail};
 use std::env;
 
-const DEFAULT_BIND_ADDR: &str = "127.0.0.1:8866";
 const DEFAULT_DATABASE_URL: &str = "sqlite://data/fund-monitor.db";
 const DEFAULT_POLL_INTERVAL_SECONDS: u64 = 60;
 const DEFAULT_TELEGRAM_API_BASE_URL: &str = "https://api.telegram.org";
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
-    pub bind_addr: String,
     pub database_url: String,
     pub poll_interval_seconds: u64,
     pub telegram_api_base_url: String,
@@ -20,7 +18,6 @@ impl AppConfig {
     pub fn from_env() -> Result<Self> {
         dotenvy::dotenv().ok();
 
-        let bind_addr = read_string("FUND_MONITOR_BIND_ADDR", DEFAULT_BIND_ADDR)?;
         let database_url = read_string("FUND_MONITOR_DATABASE_URL", DEFAULT_DATABASE_URL)?;
         let poll_interval_seconds = read_u64(
             "FUND_MONITOR_POLL_INTERVAL_SECONDS",
@@ -37,7 +34,6 @@ impl AppConfig {
         let telegram_chat_id = read_optional_string("FUND_MONITOR_TELEGRAM_CHAT_ID")?;
 
         Ok(Self {
-            bind_addr,
             database_url,
             poll_interval_seconds,
             telegram_api_base_url,

@@ -17,7 +17,6 @@ async fn bootstrap_initializes_sqlite_and_runs_migrations() {
     let database_url = format!("sqlite://{}", db_path.display());
 
     let config = AppConfig {
-        bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
         poll_interval_seconds: 60,
         telegram_api_base_url: "https://api.telegram.org".to_owned(),

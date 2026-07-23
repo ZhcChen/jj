@@ -4,11 +4,9 @@ pub mod jobs;
 pub mod notifications;
 pub mod providers;
 pub mod storage;
-pub mod web;
 
 use anyhow::Result;
 use app::{config::AppConfig, state::AppState};
-use axum::Router;
 use domain::fund::NewFund;
 use notifications::telegram::TelegramNotifier;
 use providers::{default_fund_source, fund_source::EastmoneyFundSource};
@@ -30,10 +28,6 @@ pub async fn build_state_with_fund_source(
     let pool = db::initialize_database(&config.database_url).await?;
     let telegram_notifier = TelegramNotifier::from_app_config(&config)?;
     Ok(AppState::new(config, pool, fund_source, telegram_notifier))
-}
-
-pub fn app_router(state: AppState) -> Router {
-    web::router(state)
 }
 
 pub async fn ensure_default_funds(pool: &SqlitePool) -> Result<()> {

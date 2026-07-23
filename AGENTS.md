@@ -7,11 +7,9 @@
 
 ## 技术栈与模块约定
 - 仓库按模块组织，业务模块统一放在 `modules/`。
-- 后端与 Web 应用统一使用 Rust。
-- Rust Web 框架固定为 `axum`。
-- 页面使用原生 `html + css + js`。
-- 页面与静态资源默认按“可打包进 Rust 二进制”设计，静态资源优先使用 `rust-embed`；需要服务端模板时优先 `askama`。
-- 桌面端模块 `modules/app` 使用 Flutter 开发，当前先支持 `Windows / macOS / Linux`，未来再补 `Android / iOS`。
+- `modules/fund-monitor` 作为 Rust 核心后台模块，负责数据抓取、规则计算、任务调度、通知与存储，不再承载 Web UI。
+- 所有前端开发统一在 `modules/app` 进行。
+- `modules/app` 使用 Flutter 开发，当前先支持 `Windows / macOS / Linux`，未来再补 `Android / iOS`。
 
 ## 工作模式
 - 本项目默认启用 **Compound Engineering (CE)** 作为主要 AI 工作架构。

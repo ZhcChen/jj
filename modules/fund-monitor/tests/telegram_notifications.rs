@@ -1,29 +1,26 @@
 use axum::{
     Router,
-    body::Body,
     extract::State,
-    http::{Request, StatusCode, header},
+    http::{StatusCode, header},
     response::IntoResponse,
     routing::{get, post},
 };
 use fund_monitor::{
     app::config::AppConfig,
-    app_router, build_state_with_fund_source,
+    build_state_with_fund_source,
     jobs::poll_funds::PollFundsJob,
     notifications::telegram::TelegramNotifier,
     providers::{fund_source::EastmoneyFundSource, http_client::HttpClient},
     storage::{alert_repo::AlertRepo, fund_repo::FundRepo, rule_repo::RuleRepo},
 };
-use http_body_util::BodyExt;
 use std::sync::{Arc, Mutex};
 use tempfile::tempdir;
-use tower::util::ServiceExt;
 
 const TELEGRAM_BOT_TOKEN: &str = "TEST_TOKEN";
 const TELEGRAM_CHAT_ID: &str = "123456";
 
 #[tokio::test]
-async fn alerts_page_shows_generated_alert() {
+async fn generated_alert_is_recorded_with_context() {
     let server = spawn_fixture_server(TelegramBehavior::Success).await;
     let state = test_state_with_server(&server.base_url, false).await;
     let fund = create_fund(&state.pool, "000001", "示例基金A").await;
@@ -40,15 +37,20 @@ async fn alerts_page_shows_generated_alert() {
         .await
         .expect("run poll job");
 
-    let app = app_router(state);
-    let html = get_html(&app, "/alerts").await;
-    assert!(html.contains("示例基金A (000001)"));
-    assert!(html.contains("涨跌幅 1.25%"));
-    assert!(html.contains("新告警"));
+    let alerts = AlertRepo::new(state.pool.clone())
+        .list_recent_with_context(10)
+        .await
+        .expect("list alerts with context");
+    assert_eq!(alerts.len(), 1);
+    assert_eq!(alerts[0].fund_id, fund.id);
+    assert_eq!(alerts[0].fund_code, "000001");
+    assert_eq!(alerts[0].fund_name, "示例基金A");
+    assert_eq!(alerts[0].status, "new");
+    assert!(alerts[0].reason.contains("涨跌幅 1.25%"));
 }
 
 #[tokio::test]
-async fn alert_status_update_is_visible_on_alerts_page() {
+async fn alert_status_can_be_updated_in_repository() {
     let server = spawn_fixture_server(TelegramBehavior::Success).await;
     let state = test_state_with_server(&server.base_url, false).await;
     let fund = create_fund(&state.pool, "000001", "示例基金A").await;
@@ -65,38 +67,22 @@ async fn alert_status_update_is_visible_on_alerts_page() {
         .await
         .expect("run poll job");
 
-    let app = app_router(state);
-    let response = app
-        .clone()
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/alerts/1/status")
-                .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
-                .body(Body::from("status=processed"))
-                .expect("request"),
-        )
+    let repo = AlertRepo::new(state.pool.clone());
+    repo.update_status(1, "processed")
         .await
-        .expect("status response");
+        .expect("update alert status");
 
-    assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert_eq!(
-        response
-            .headers()
-            .get(header::LOCATION)
-            .and_then(|value| value.to_str().ok()),
-        Some("/alerts?updated=processed")
-    );
-
-    let html = get_html(&app, "/alerts?updated=processed").await;
-    assert!(html.contains("已将告警标记为已处理"));
-    assert!(html.contains("已处理"));
+    let alert = repo
+        .find_by_id(1)
+        .await
+        .expect("find alert")
+        .expect("alert exists");
+    assert_eq!(alert.status, "processed");
 }
 
 #[test]
 fn telegram_config_partial_missing_returns_clear_error() {
     let config = AppConfig {
-        bind_addr: "127.0.0.1:0".to_owned(),
         database_url: "sqlite://data/test.db".to_owned(),
         poll_interval_seconds: 60,
         telegram_api_base_url: "https://api.telegram.org".to_owned(),
@@ -180,10 +166,6 @@ async fn telegram_request_failure_keeps_alert_and_tracks_error() {
             .expect("notification result")
             .contains("telegram 发送失败")
     );
-
-    let app = app_router(state);
-    let html = get_html(&app, "/alerts").await;
-    assert!(html.contains("telegram 发送失败"));
 }
 
 async fn create_fund(
@@ -234,7 +216,6 @@ async fn test_state_with_server(
     let database_url = format!("sqlite://{}", db_path.display());
 
     let config = AppConfig {
-        bind_addr: "127.0.0.1:0".to_owned(),
         database_url,
         poll_interval_seconds: 1,
         telegram_api_base_url: base_url.to_owned(),
@@ -246,23 +227,6 @@ async fn test_state_with_server(
     build_state_with_fund_source(config, source)
         .await
         .expect("build state")
-}
-
-async fn get_html(app: &Router, path: &str) -> String {
-    let response = app
-        .clone()
-        .oneshot(
-            Request::builder()
-                .uri(path)
-                .body(Body::empty())
-                .expect("request"),
-        )
-        .await
-        .expect("response");
-
-    assert_eq!(response.status(), StatusCode::OK);
-    let body = response.into_body().collect().await.expect("collect body");
-    String::from_utf8(body.to_bytes().to_vec()).expect("utf8 body")
 }
 
 #[derive(Clone)]
