@@ -133,14 +133,14 @@ class _HeaderBar extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWideLayout = constraints.maxWidth >= 1280;
 
             if (isWideLayout) {
               return SizedBox(
-                height: 88,
+                height: 72,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -216,15 +216,15 @@ class _HeaderBrand extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: 52,
-          height: 52,
+          width: 44,
+          height: 44,
           child: Image.asset(
             _brandMarkAsset,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +249,7 @@ class _HeaderRefresh extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppPalette.panelMuted,
         borderRadius: BorderRadius.circular(16),
@@ -259,7 +259,7 @@ class _HeaderRefresh extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text('最近刷新', style: theme.textTheme.labelMedium),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(lastRefreshAt, style: theme.textTheme.titleMedium),
         ],
       ),
@@ -285,7 +285,7 @@ class _NavChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: selected ? AppPalette.accent : AppPalette.panelMuted,
@@ -304,7 +304,7 @@ class _NavChip extends StatelessWidget {
           children: [
             Icon(
               item.icon,
-              size: 18,
+              size: 17,
               color: selected ? Colors.white : AppPalette.textSoft,
             ),
             const SizedBox(width: 8),
