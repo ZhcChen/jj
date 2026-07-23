@@ -272,20 +272,22 @@ jobs:
             PRERELEASE_FLAG=""
           fi
 
-          if gh release view "${RELEASE_TAG}" > /dev/null 2>&1; then
-            mapfile -t EXISTING_ASSETS < <(gh release view "${RELEASE_TAG}" --json assets --jq '.assets[].name')
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" > /dev/null 2>&1; then
+            mapfile -t EXISTING_ASSETS < <(gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --json assets --jq '.assets[].name')
 
             for ASSET_NAME in "${EXISTING_ASSETS[@]}"; do
-              gh release delete-asset "${RELEASE_TAG}" "${ASSET_NAME}" --yes
+              gh release delete-asset "${RELEASE_TAG}" "${ASSET_NAME}" --repo "${GITHUB_REPOSITORY}" --yes
             done
 
-            gh release upload "${RELEASE_TAG}" .artifacts/release-assets/* --clobber
+            gh release upload "${RELEASE_TAG}" .artifacts/release-assets/* --repo "${GITHUB_REPOSITORY}" --clobber
             gh release edit "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
               --title "Fund Monitor App ${RELEASE_TAG}" \
               --notes-file .artifacts/release-notes.md \
               ${PRERELEASE_FLAG}
           else
             gh release create "${RELEASE_TAG}" .artifacts/release-assets/* \
+              --repo "${GITHUB_REPOSITORY}" \
               --title "Fund Monitor App ${RELEASE_TAG}" \
               --notes-file .artifacts/release-notes.md \
               ${PRERELEASE_FLAG}
