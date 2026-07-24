@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app_data.dart';
@@ -30,10 +32,66 @@ class DesktopWorkspace extends StatefulWidget {
   State<DesktopWorkspace> createState() => _DesktopWorkspaceState();
 }
 
-class _DesktopWorkspaceState extends State<DesktopWorkspace> {
-  final DesktopSeedData _data = buildDesktopSeedData();
+class _DesktopWorkspaceState extends State<DesktopWorkspace>
+    with WidgetsBindingObserver {
+  late DesktopSeedData _data;
+  Timer? _refreshTimer;
   DesktopSection _section = DesktopSection.dashboard;
   int _selectedFundIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _data = buildDesktopSeedData();
+    _scheduleRefreshLoop();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshData();
+      _scheduleRefreshLoop();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleRefreshLoop() {
+    _refreshTimer?.cancel();
+
+    final now = DateTime.now();
+    final nextMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
+    final initialDelay = nextMinute.difference(now);
+
+    _refreshTimer = Timer(initialDelay, () {
+      _refreshData();
+      _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        _refreshData();
+      });
+    });
+  }
+
+  void _refreshData() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _data = buildDesktopSeedData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -689,7 +747,7 @@ class FundDetailReadonlyCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SubHeader(title: '行情快照', badge: '自动刷新预留'),
+                  const _SubHeader(title: '行情快照', badge: '每分钟自动刷新'),
                   const SizedBox(height: 12),
                   const _SubHeader(title: '确认净值口径', badge: '官方净值'),
                   const SizedBox(height: 12),

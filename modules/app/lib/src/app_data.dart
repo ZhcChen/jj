@@ -156,17 +156,24 @@ class DesktopSeedData {
   final String lastRefreshAt;
 }
 
-DesktopSeedData buildDesktopSeedData() {
-  const primarySnapshot = QuoteSnapshot(
-    navDate: '2026-07-22',
+DesktopSeedData buildDesktopSeedData({DateTime? now}) {
+  final currentTime = _trimMilliseconds(now ?? DateTime.now());
+  final latestNavDate = _formatDate(_previousTradingDay(currentTime));
+  final primaryFetchTime = currentTime;
+  final secondaryFetchTime = currentTime.subtract(const Duration(seconds: 47));
+  final tertiaryFetchTime = currentTime.subtract(
+    const Duration(minutes: 1, seconds: 13),
+  );
+  final primarySnapshot = QuoteSnapshot(
+    navDate: latestNavDate,
     unitNav: '2.2499',
     confirmedChangeRate: '-1.26%',
     confirmedTone: ChangeTone.down,
     estimatedNav: '2.1883',
     estimatedChangeRate: '-2.74%',
     estimatedTone: ChangeTone.down,
-    estimatedAt: '2026-07-23 11:30:00',
-    fetchedAt: '2026-07-23 12:06:01',
+    estimatedAt: _formatDateTime(primaryFetchTime),
+    fetchedAt: _formatDateTime(primaryFetchTime),
     source: '东方财富净值快照 + 东方财富实时估值',
     hasEstimatedSnapshot: true,
   );
@@ -178,7 +185,7 @@ DesktopSeedData buildDesktopSeedData() {
       MetricCardData(label: '活跃规则', value: '4', hint: '已启用的监控规则数量'),
       MetricCardData(label: '待处理告警', value: '2', hint: '桌面端后续会提供快捷处理入口'),
     ],
-    funds: const [
+    funds: [
       FundRecord(
         code: '012734',
         name: '易方达中证人工智能主题ETF联接C',
@@ -194,7 +201,7 @@ DesktopSeedData buildDesktopSeedData() {
         tags: '观察',
         note: '当前仅展示确认净值，后续可对比“是否存在盘中估值返回”。',
         snapshot: QuoteSnapshot(
-          navDate: '2026-07-22',
+          navDate: latestNavDate,
           unitNav: '1.4820',
           confirmedChangeRate: '0.68%',
           confirmedTone: ChangeTone.up,
@@ -202,7 +209,7 @@ DesktopSeedData buildDesktopSeedData() {
           estimatedChangeRate: '-',
           estimatedTone: ChangeTone.neutral,
           estimatedAt: '-',
-          fetchedAt: '2026-07-23 12:05:14',
+          fetchedAt: _formatDateTime(secondaryFetchTime),
           source: '东方财富净值快照',
           hasEstimatedSnapshot: false,
         ),
@@ -214,15 +221,15 @@ DesktopSeedData buildDesktopSeedData() {
         tags: '轮动',
         note: '用于验证指数类基金在桌面端的多基金切换体验。',
         snapshot: QuoteSnapshot(
-          navDate: '2026-07-22',
+          navDate: latestNavDate,
           unitNav: '1.0368',
           confirmedChangeRate: '-0.45%',
           confirmedTone: ChangeTone.down,
           estimatedNav: '1.0307',
           estimatedChangeRate: '-0.59%',
           estimatedTone: ChangeTone.down,
-          estimatedAt: '2026-07-23 11:30:00',
-          fetchedAt: '2026-07-23 12:04:48',
+          estimatedAt: _formatDateTime(tertiaryFetchTime),
+          fetchedAt: _formatDateTime(tertiaryFetchTime),
           source: '东方财富净值快照 + 东方财富实时估值',
           hasEstimatedSnapshot: true,
         ),
@@ -258,24 +265,24 @@ DesktopSeedData buildDesktopSeedData() {
         status: '观察中',
       ),
     ],
-    alerts: const [
+    alerts: [
       AlertRecord(
         title: '012734 估算跌幅已触发阈值',
         summary: '估算涨跌幅 -2.74%，已命中“涨跌幅阈值”规则。',
         level: '高',
-        occurredAt: '2026-07-23 12:06:01',
+        occurredAt: _formatDateTime(primaryFetchTime),
       ),
       AlertRecord(
         title: '000001 暂无实时估值数据',
         summary: '当前仅返回确认净值，桌面端后续会高亮这种数据缺口。',
         level: '中',
-        occurredAt: '2026-07-23 12:05:14',
+        occurredAt: _formatDateTime(secondaryFetchTime),
       ),
       AlertRecord(
         title: '006113 估值偏离接近预警线',
         summary: '估值偏离 1.84%，尚未正式触发，可继续关注。',
         level: '低',
-        occurredAt: '2026-07-23 12:04:48',
+        occurredAt: _formatDateTime(tertiaryFetchTime),
       ),
     ],
     settings: const [
@@ -304,8 +311,8 @@ DesktopSeedData buildDesktopSeedData() {
         items: [
           SettingItem(
             label: '当前数据模式',
-            value: '桌面种子数据',
-            hint: '先完成桌面端壳与信息架构，再接入真实数据源。',
+            value: '动态种子数据',
+            hint: '先打通桌面刷新与时间状态，再接入真实数据源。',
           ),
           SettingItem(
             label: '目标数据来源',
@@ -320,26 +327,67 @@ DesktopSeedData buildDesktopSeedData() {
         ],
       ),
     ],
-    jobs: const [
+    jobs: [
       JobRecord(
         name: 'poll_funds',
         status: 'success',
-        startedAt: '2026-07-23 12:06:00',
+        startedAt: _formatDateTime(primaryFetchTime),
         note: '轮询任务已按 60 秒频率执行。',
       ),
       JobRecord(
         name: 'fund_poll_fetch:012734',
         status: 'success',
-        startedAt: '2026-07-23 12:06:01',
+        startedAt: _formatDateTime(primaryFetchTime),
         note: '已写入最新估值快照。',
       ),
       JobRecord(
         name: 'fund_poll_fetch:000001',
         status: 'success',
-        startedAt: '2026-07-23 12:05:14',
+        startedAt: _formatDateTime(secondaryFetchTime),
         note: '当前无盘中估值字段，仍保留确认净值。',
       ),
     ],
-    lastRefreshAt: '2026-07-23 12:06:01',
+    lastRefreshAt: _formatDateTime(primaryFetchTime),
   );
+}
+
+DateTime _trimMilliseconds(DateTime value) {
+  return DateTime(
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+    value.second,
+  );
+}
+
+DateTime _previousTradingDay(DateTime currentTime) {
+  var cursor = DateTime(
+    currentTime.year,
+    currentTime.month,
+    currentTime.day,
+  ).subtract(const Duration(days: 1));
+
+  while (cursor.weekday == DateTime.saturday ||
+      cursor.weekday == DateTime.sunday) {
+    cursor = cursor.subtract(const Duration(days: 1));
+  }
+
+  return cursor;
+}
+
+String _formatDate(DateTime value) {
+  final year = value.year.toString().padLeft(4, '0');
+  final month = value.month.toString().padLeft(2, '0');
+  final day = value.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
+}
+
+String _formatDateTime(DateTime value) {
+  final date = _formatDate(value);
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  final second = value.second.toString().padLeft(2, '0');
+  return '$date $hour:$minute:$second';
 }
