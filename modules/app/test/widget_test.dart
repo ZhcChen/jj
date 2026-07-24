@@ -5,7 +5,9 @@ void main() {
   testWidgets('desktop shell shows sections and read-only fund detail', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const FundMonitorDesktopApp());
+    await tester.pumpWidget(
+      const FundMonitorDesktopApp(enableLiveQuotes: false),
+    );
 
     expect(find.text('基金监控桌面端'), findsOneWidget);
     expect(find.text('总览看板'), findsAtLeastNWidgets(1));

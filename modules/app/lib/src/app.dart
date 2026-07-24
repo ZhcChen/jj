@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_data.dart';
+import 'live_quote_service.dart';
 import 'app_theme.dart';
 
 const String _brandMarkAsset = 'brand/logo/fund-monitor-mark.png';
@@ -12,7 +13,14 @@ void runFundMonitorDesktopApp() {
 }
 
 class FundMonitorDesktopApp extends StatelessWidget {
-  const FundMonitorDesktopApp({super.key});
+  const FundMonitorDesktopApp({
+    super.key,
+    this.quoteService,
+    this.enableLiveQuotes = true,
+  });
+
+  final EastmoneyQuoteService? quoteService;
+  final bool enableLiveQuotes;
 
   @override
   Widget build(BuildContext context) {
@@ -20,13 +28,23 @@ class FundMonitorDesktopApp extends StatelessWidget {
       title: '基金监控桌面端',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const DesktopWorkspace(),
+      home: DesktopWorkspace(
+        quoteService: quoteService,
+        enableLiveQuotes: enableLiveQuotes,
+      ),
     );
   }
 }
 
 class DesktopWorkspace extends StatefulWidget {
-  const DesktopWorkspace({super.key});
+  const DesktopWorkspace({
+    super.key,
+    this.quoteService,
+    this.enableLiveQuotes = true,
+  });
+
+  final EastmoneyQuoteService? quoteService;
+  final bool enableLiveQuotes;
 
   @override
   State<DesktopWorkspace> createState() => _DesktopWorkspaceState();
@@ -35,7 +53,12 @@ class DesktopWorkspace extends StatefulWidget {
 class _DesktopWorkspaceState extends State<DesktopWorkspace>
     with WidgetsBindingObserver {
   late DesktopSeedData _data;
+  late final EastmoneyQuoteService _quoteService;
+  late final bool _ownsQuoteService;
   Timer? _refreshTimer;
+  DateTime? _lastSuccessfulRefreshAt;
+  String _dataMode = '等待首轮实时抓取';
+  bool _refreshInFlight = false;
   DesktopSection _section = DesktopSection.dashboard;
   int _selectedFundIndex = 0;
 
@@ -43,14 +66,19 @@ class _DesktopWorkspaceState extends State<DesktopWorkspace>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _data = buildDesktopSeedData();
-    _scheduleRefreshLoop();
+    _ownsQuoteService = widget.quoteService == null;
+    _quoteService = widget.quoteService ?? EastmoneyQuoteService();
+    _data = buildDesktopSeedData(funds: buildDesktopFundCatalog());
+    if (widget.enableLiveQuotes) {
+      unawaited(_refreshData());
+      _scheduleRefreshLoop();
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _refreshData();
+    if (widget.enableLiveQuotes && state == AppLifecycleState.resumed) {
+      unawaited(_refreshData());
       _scheduleRefreshLoop();
     }
   }
@@ -59,6 +87,9 @@ class _DesktopWorkspaceState extends State<DesktopWorkspace>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
+    if (_ownsQuoteService) {
+      _quoteService.close();
+    }
     super.dispose();
   }
 
@@ -76,21 +107,46 @@ class _DesktopWorkspaceState extends State<DesktopWorkspace>
     final initialDelay = nextMinute.difference(now);
 
     _refreshTimer = Timer(initialDelay, () {
-      _refreshData();
+      unawaited(_refreshData());
       _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-        _refreshData();
+        unawaited(_refreshData());
       });
     });
   }
 
-  void _refreshData() {
-    if (!mounted) {
+  Future<void> _refreshData() async {
+    if (!mounted || _refreshInFlight) {
       return;
     }
 
-    setState(() {
-      _data = buildDesktopSeedData();
-    });
+    _refreshInFlight = true;
+    final currentFunds = _data.funds;
+
+    try {
+      final result = await _quoteService.refreshFunds(currentFunds);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        if (result.refreshedAt != null) {
+          _lastSuccessfulRefreshAt = result.refreshedAt;
+          _dataMode = '实时行情直连（东方财富）';
+        } else if (_lastSuccessfulRefreshAt == null) {
+          _dataMode = '实时行情暂不可用';
+        } else {
+          _dataMode = '最近一次抓取失败，保留上一轮快照';
+        }
+
+        _data = buildDesktopSeedData(
+          funds: result.funds,
+          refreshedAt: _lastSuccessfulRefreshAt,
+          dataMode: _dataMode,
+        );
+      });
+    } finally {
+      _refreshInFlight = false;
+    }
   }
 
   @override
@@ -394,7 +450,7 @@ class DashboardSection extends StatelessWidget {
         Text('总览看板', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          '桌面端先对齐现有信息架构与视觉层级，下一步再把 fund-monitor 的真实数据链路接过来。',
+          '当前已直连东方财富实时行情，桌面端会按分钟刷新净值、估值与抓取时间。',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 18),
@@ -416,8 +472,9 @@ class DashboardSection extends StatelessWidget {
                       children: const [
                         _BulletRow('新增 `modules/app` Flutter 桌面模块'),
                         _BulletRow('当前先支持 Windows / macOS / Linux'),
+                        _BulletRow('已接入东方财富实时净值与盘中估值数据'),
                         _BulletRow('桌面 UI 已映射总览、基金、规则、告警、设置五个工作区'),
-                        _BulletRow('后续可继续补 Android / iOS 与真实数据接入'),
+                        _BulletRow('后续可继续补 Android / iOS 与本地持久化能力'),
                       ],
                     ),
                   ),
@@ -575,7 +632,7 @@ class RulesSection extends StatelessWidget {
         Text('规则管理', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          '规则页先承接现有 Web 模块的规则语义，后续再补桌面端编辑与启停动作。',
+          '规则页当前承接现有监控语义，后续再补桌面端编辑、启停与回测动作。',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 18),
@@ -614,7 +671,7 @@ class AlertsSection extends StatelessWidget {
         Text('告警列表', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          '这里先展示桌面端的告警阅读模型，后续可再接入告警状态处理和外部通知联动。',
+          '告警页当前基于最近一次实时行情快照聚合，后续再补处理状态和通知联动。',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 18),
@@ -654,7 +711,7 @@ class SettingsSection extends StatelessWidget {
         Text('系统配置', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 8),
         Text(
-          '桌面端首期重点是模块骨架、信息结构和 GitHub Release 构建链路。',
+          '桌面端已具备实时行情直连能力，后续重点会放在持久化、规则执行与发布完善。',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 18),
